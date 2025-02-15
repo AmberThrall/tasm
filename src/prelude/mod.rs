@@ -27,6 +27,7 @@ pub enum Value {
     UInt(u32),
     ULong(u64),
     Pointer(String),
+    RelPointer(String),
 }
 
 impl Value {
@@ -37,18 +38,24 @@ impl Value {
             Value::UInt(_) => 4,
             Value::ULong(_) => 8,
             Value::Pointer(_) => 4,
+            Value::RelPointer(_) => 4,
         }
     }
 
-    pub fn as_vec(&self, program: &Program) -> Vec<u8> {
+    pub fn as_vec(&self, program: &Program, addr: Addr) -> Vec<u8> {
         match &self {
             Value::UByte(x) => vec![*x],
             Value::UShort(x) => utils::dump_word(*x, Endianness::Little).to_vec(),
             Value::UInt(x) => utils::dump_dword(*x, Endianness::Little).to_vec(),
             Value::ULong(x) => utils::dump_qword(*x, Endianness::Little).to_vec(),
             Value::Pointer(label) => {
-                let addr = program.get_addr(label).unwrap_or_default().vaddr as u32;
-                utils::dump_dword(addr, Endianness::Little).to_vec()
+                let x = program.get_addr(label).unwrap_or_default().vaddr as u32;
+                utils::dump_dword(x, Endianness::Little).to_vec()
+            }
+            Value::RelPointer(label) => {
+                let x = program.get_addr(label).unwrap_or_default().addr as i32;
+                let delta = x - (addr.addr as i32);
+                utils::dump_dword(delta as u32, Endianness::Little).to_vec()
             }
         }
     }

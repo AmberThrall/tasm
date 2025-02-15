@@ -6,17 +6,21 @@ fn main() {
 
     // Construct the blocks 
     let mut start = Block::new();
-	start.push(Box::new(MovData::new(Register::EAX, Value::UInt(4))));
 	start.push(Box::new(MovData::new(Register::EBX, Value::UInt(1))));
 	start.push(Box::new(MovData::new(Register::ECX, Value::Pointer(".data".to_string()))));
 	start.push(Box::new(MovData::new(Register::EDX, Value::UInt(message.len() as u32))));
     start.push(Box::new(MovData::new(Register::EDI, Value::UInt(5))));
 
-	start.push(Box::new(Int(0x80)));                                    
+    let mut loop_blk = Block::new();
+	loop_blk.push(Box::new(MovData::new(Register::EAX, Value::UInt(4))));
+	loop_blk.push(Box::new(Int(0x80)));                                    
+    loop_blk.push(Box::new(Dec(Register::EDI)));
+    loop_blk.push(Box::new(JMPData(JumpConditional::NotZero, Value::RelPointer("_loop".to_string()))));
                                                                               
-	start.push(Box::new(MovData::new(Register::EAX, Value::Int(1))));
-	start.push(Box::new(MovData::new(Register::EBX, Value::Int(0))));
-	start.push(Box::new(Int(0x80))); 
+    let mut exit = Block::new();
+	exit.push(Box::new(MovData::new(Register::EAX, Value::UInt(1))));
+	exit.push(Box::new(MovData::new(Register::EBX, Value::UInt(0))));
+	exit.push(Box::new(Int(0x80))); 
      
     let mut data_block = Block::new();
     data_block.push(Box::new(RawData(message.as_bytes().to_vec())));
@@ -24,6 +28,8 @@ fn main() {
     // Construct the program.
     let mut program = Program::new();
     program.push("_start", start);
+    program.push("_loop", loop_blk);
+    program.push("_exit", exit);
     program.push(".data", data_block);
 
     // Write the ELF binary

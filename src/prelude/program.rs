@@ -2,7 +2,7 @@ use super::{Addr, Block};
 
 struct ProgramBlock {
     label: String,
-    data: Block,
+    pub data: Block,
 }
 
 pub struct Program {
@@ -52,9 +52,15 @@ impl Program {
 
     /// Converts the program into a vector of bytes.
     pub fn as_vec(&self) -> Vec<u8> {
+        let mut addr = self.entry_point;
+
         let mut dump = Vec::new();
         for block in &self.blocks {
-            dump.extend_from_slice(&block.data.as_vec(&self));
+            for instr in &block.data.instrs {
+                addr += instr.len() as u64;
+                let data = instr.as_vec(&self, addr);
+                dump.extend_from_slice(&data);
+            }
         }
 
         dump

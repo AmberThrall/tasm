@@ -1,8 +1,8 @@
-use super::{Instr, Program};
+use super::{Instr, Program, Addr};
 
 /// A Block of instructions
 pub struct Block {
-    instrs: Vec<Box<dyn Instr>>,
+    pub instrs: Vec<Box<dyn Instr>>,
     len: usize,
 }
 
@@ -29,10 +29,13 @@ impl Block {
     }
 
     /// Represents the block as a vector of bytes
-    pub fn as_vec(&self, program: &Program) -> Vec<u8> {
+    pub fn as_vec(&self, program: &Program, addr: Addr) -> Vec<u8> {
+        let mut addr = addr;
         let mut dump = Vec::new();
         for instr in &self.instrs {
-            dump.extend_from_slice(&instr.as_vec(program));
+            addr += instr.len() as u64;
+            let data = instr.as_vec(program, addr);
+            dump.extend_from_slice(&data);
         }
         dump
     }
