@@ -56,9 +56,13 @@ impl Instr for MovData {
 
         dump.push(match self.r {
             Register::EAX => 0xB8,
-            Register::EBX => 0xBB,
             Register::ECX => 0xB9,
             Register::EDX => 0xBA,
+            Register::EBX => 0xBB,
+            Register::ESP => 0xBC,
+            Register::EBP => 0xBD,
+            Register::ESI => 0xBE,
+            Register::EDI => 0xBF,
         });
 
         dump.extend_from_slice(&self.value.as_vec(program));
