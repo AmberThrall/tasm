@@ -1,13 +1,11 @@
 pub mod addr;
 pub mod elf;
 pub mod instr;
-pub mod block;
 pub mod program;
 mod utils;
 
 pub use addr::*;
 pub use instr::*;
-pub use block::*;
 pub use program::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

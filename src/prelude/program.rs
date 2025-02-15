@@ -1,13 +1,27 @@
-use super::{Addr, Block};
+use super::{Addr, Instr};
 
-struct ProgramBlock {
+pub struct ProgramBlock {
     label: String,
-    pub data: Block,
+    len: usize,
+    instrs: Vec<Box<dyn Instr>>,
 }
 
 pub struct Program {
     pub entry_point: Addr,
     blocks: Vec<ProgramBlock> 
+}
+
+impl ProgramBlock {
+    /// Pushes an instruction to the block.
+    pub fn push(&mut self, instr: Box<dyn Instr>) {
+        self.len += instr.len();
+        self.instrs.push(instr);
+    }
+
+    /// Gets the length of the block
+    pub fn len(&self) -> usize {
+        self.len
+    }
 }
 
 impl Program {
@@ -20,18 +34,21 @@ impl Program {
     }
 
     /// Pushes an instruction block to the program labeled by 'label'.
-    pub fn push(&mut self, label: &str, block: Block) {
+    pub fn new_block(&mut self, label: &str) -> &mut ProgramBlock {
         self.blocks.push(ProgramBlock {
             label: label.to_string(),
-            data: block,
+            len: 0,
+            instrs: Vec::new(),
         });
+
+        self.blocks.last_mut().unwrap()
     }
 
     /// Gets the length of the program in bytes.
     pub fn len(&self) -> usize {
         let mut len = 0;
         for block in &self.blocks {
-            len += block.data.len();
+            len += block.len();
         }
         len
     }
@@ -44,7 +61,7 @@ impl Program {
             if block.label == label {
                 return Some(addr);
             }
-            addr += block.data.len() as u64;
+            addr += block.len() as u64;
         }
 
         None
@@ -56,7 +73,7 @@ impl Program {
 
         let mut dump = Vec::new();
         for block in &self.blocks {
-            for instr in &block.data.instrs {
+            for instr in &block.instrs {
                 addr += instr.len() as u64;
                 let data = instr.as_vec(&self, addr);
                 dump.extend_from_slice(&data);
