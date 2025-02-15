@@ -1,3 +1,5 @@
+use std::fmt::Pointer;
+
 use super::{Addr, Instr};
 
 pub struct ProgramBlock {
@@ -7,6 +9,7 @@ pub struct ProgramBlock {
 }
 
 pub struct Program {
+    pub offset: Addr,
     pub entry_point: Addr,
     blocks: Vec<ProgramBlock> 
 }
@@ -28,7 +31,8 @@ impl Program {
     /// Constructs a new program with no blocks.
     pub fn new() -> Program {
         Program {
-            entry_point: Addr { addr: 0, vaddr: 0 },
+            offset: Addr::default(),
+            entry_point: Addr::default(),
             blocks: Vec::new(),
         }
     }
@@ -53,9 +57,14 @@ impl Program {
         len
     }
 
+    pub fn set_entrypoint(&mut self, label: &str) {
+        let addr = self.get_addr(label).unwrap_or_default();
+        self.entry_point = addr;
+    }
+
     /// Looks up address of the start of the block labeled by 'label'.
     pub fn get_addr(&self, label: &str) -> Option<Addr> {
-        let mut addr = self.entry_point;
+        let mut addr = self.offset;
 
         for block in &self.blocks {
             if block.label == label {
@@ -69,7 +78,7 @@ impl Program {
 
     /// Converts the program into a vector of bytes.
     pub fn as_vec(&self) -> Vec<u8> {
-        let mut addr = self.entry_point;
+        let mut addr = self.offset;
 
         let mut dump = Vec::new();
         for block in &self.blocks {

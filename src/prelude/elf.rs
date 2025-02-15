@@ -47,7 +47,6 @@ pub struct ELFProgramHeader {
 }
 
 pub struct ELF {
-    pub entry_point: Addr,
     pub class: ELFClass,
     pub header: ELFHeader,
     pub program_header: ELFProgramHeader,
@@ -309,30 +308,29 @@ impl ELFProgramHeader {
 
 impl ELF {
     pub fn new_x86(program: Program) -> ELF {
-        let mut entry_point = Addr { addr: 0, vaddr: 0x08048000 }; // TODO: Figure out what this address is.
-        let mut header = ELFHeader::new_x86(entry_point.vaddr as u32);
+        let mut offset = Addr { addr: 0, vaddr: 0x08048000 }; // TODO: Figure out what this address is.
+        let mut header = ELFHeader::new_x86(0);
         let mut program_header = ELFProgramHeader {
             class: ELFClass::X86,
             p_type: ELFProgramHeaderType::Loadable,
             p_offset: 0,
-            p_vaddr: entry_point.vaddr,
+            p_vaddr: offset.vaddr,
             p_filesz: program.len() as u64,
         };
 
-        entry_point += header.len() as u64 + program_header.len() as u64;
-        header.entry_point += header.len() as u64 + program_header.len() as u64;
-        program_header.p_offset += header.len() as u64 + program_header.len() as u64;
+        offset += header.len() as u64 + program_header.len() as u64;
+        header.entry_point = offset.vaddr + program.entry_point.addr; 
+        program_header.p_offset = header.len() as u64 + program_header.len() as u64;
         program_header.p_vaddr += header.len() as u64 + program_header.len() as u64;
 
         let mut elf = ELF {
-            entry_point,           
             class: ELFClass::X86,
             header,
             program_header,           
             program,
         };
 
-        elf.program.entry_point = entry_point;
+        elf.program.offset = offset;
         elf
     }
     
