@@ -1,4 +1,4 @@
-use super::{Endianness, utils::*};
+use super::{Endianness, utils::*, Program, Addr};
 use std::fs::File;
 use std::path::Path;
 use std::io::Write;
@@ -47,11 +47,11 @@ pub struct ELFProgramHeader {
 }
 
 pub struct ELF {
-    pub entry_point: u64,
+    pub entry_point: Addr,
     pub class: ELFClass,
     pub header: ELFHeader,
     pub program_header: ELFProgramHeader,
-    pub instructions: Vec<u8>,
+    pub program: Program,
 }
 
 impl ELFHeader {
@@ -308,42 +308,40 @@ impl ELFProgramHeader {
 }
 
 impl ELF {
-    pub fn new_x86() -> ELF {
-        let entry_point: u64 = 0x08048000; // TODO: Figure out what this address is.
-        let mut header = ELFHeader::new_x86(entry_point as u32);
+    pub fn new_x86(program: Program) -> ELF {
+        let mut entry_point = Addr { addr: 0, vaddr: 0x08048000 }; // TODO: Figure out what this address is.
+        let mut header = ELFHeader::new_x86(entry_point.vaddr as u32);
         let mut program_header = ELFProgramHeader {
             class: ELFClass::X86,
             p_type: ELFProgramHeaderType::Loadable,
             p_offset: 0,
-            p_vaddr: entry_point as u64,
-            p_filesz: 0,
+            p_vaddr: entry_point.vaddr,
+            p_filesz: program.len() as u64,
         };
 
+        entry_point += header.len() as u64 + program_header.len() as u64;
         header.entry_point += header.len() as u64 + program_header.len() as u64;
         program_header.p_offset += header.len() as u64 + program_header.len() as u64;
         program_header.p_vaddr += header.len() as u64 + program_header.len() as u64;
 
-        ELF {
+        let mut elf = ELF {
             entry_point,           
             class: ELFClass::X86,
             header,
             program_header,           
-            instructions: Vec::new(),
-        }
+            program,
+        };
+
+        elf.program.entry_point = entry_point;
+        elf
     }
-
-    pub fn push_instruction(&mut self, bytes: &[u8]) {
-        self.instructions.extend_from_slice(bytes);
-
-        // Update p_filesz in program headers 
-        self.program_header.p_filesz += bytes.len() as u64;
-    }
-
+    
+    /// Saves the ELF binary to disk.
     pub fn save<P: AsRef<Path>>(&self, path: P) -> std::io::Result<()> {
         let mut file = File::create(path)?;
         file.write_all(&self.header.as_vec())?;
         file.write_all(&self.program_header.as_vec(self.header.endianness))?;
-        file.write_all(&self.instructions)?;
+        file.write_all(&self.program.as_vec())?;
         Ok(())
     }
 }
