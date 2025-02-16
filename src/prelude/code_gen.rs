@@ -109,14 +109,19 @@ impl CodeGenerator {
         match &arguments[0] {
             ASTNode::Identifier(_) => {
                 let register = get_register(&arguments[0])?;
-                let value = match &arguments[1] {
-                    ASTNode::Number(x) => Value::UInt(*x),
-                    ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
-                    _ => return Err("second argument of mov is invalid, expected number or label.".to_string())
-                };
-                self.program.get_block_mut(self.current_block).unwrap().push(
-                    Instruction::MovImmediate { register, value }
-                );
+                if let Ok(reg2) = get_register(&arguments[1]) {
+
+                }
+                else {
+                    let value = match &arguments[1] {
+                        ASTNode::Number(x) => if register.bits() == 32 { Value::UInt(*x) } else { Value::UByte(*x as u8) },
+                        ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
+                        _ => return Err("second argument of mov is invalid, expected number or label.".to_string())
+                    };
+                    self.program.get_block_mut(self.current_block).unwrap().push(
+                        Instruction::MovImmediate { register, value }
+                    );
+                }
             }
             ASTNode::Address(arg0) => {
                 let mut addr = None;
@@ -206,7 +211,7 @@ impl CodeGenerator {
 
         let register = get_register(&arguments[0])?;
         let value = match &arguments[1] {
-            ASTNode::Number(x) => Value::UInt(*x),
+            ASTNode::Number(x) => if register.bits() == 8 { Value::UByte(*x as u8) } else { Value::UInt(*x) },
             ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
             _ => return Err("second argument of add is invalid, expected number or label.".to_string())
         };
@@ -224,7 +229,7 @@ impl CodeGenerator {
 
         let register = get_register(&arguments[0])?;
         let value = match &arguments[1] {
-            ASTNode::Number(x) => Value::UInt(*x),
+            ASTNode::Number(x) => if register.bits() == 8 { Value::UByte(*x as u8) } else { Value::UInt(*x) },
             ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
             _ => return Err("second argument of sub is invalid, expected number or label.".to_string())
         };

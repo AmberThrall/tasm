@@ -275,7 +275,7 @@ impl ELFProgramHeader {
         // p_memsz: size in bytes of the segment in memory. we set p_memsz = p_filesz
         match self.class {
             ELFClass::X86 => {
-                let bytes = dump_dword(self.p_filesz as u32, endianness);
+                let bytes = dump_dword(0x40000000, endianness);
                 for i in 0..4 { dump.push(bytes[i]); }
             }
             ELFClass::X86_64 => {

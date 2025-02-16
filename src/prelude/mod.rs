@@ -20,13 +20,45 @@ pub enum Endianness {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Register {
-    EAX = 0, ECX = 1, EDX = 2, EBX = 3, ESP = 4, EBP = 5, ESI = 6, EDI = 7,
+    AH, AL, BH, BL, CH, CL,  DH, DL,
+    EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI,
+}
+
+impl Register {
+    pub fn bits(&self) -> usize {
+        use Register::*;
+        match &self {
+            AL | CL | DL | BL | AH | CH | DH | BH => 8,
+            EAX | ECX | EDX | EBX | ESP | EBP | ESI | EDI => 32,
+        }
+    }
+
+    pub fn offset(&self) -> u8 {
+        match self {
+            Register::AL | Register::EAX => 0,
+            Register::CL | Register::ECX => 1,
+            Register::DL | Register::EDX => 2,
+            Register::BL | Register::EBX => 3,
+            Register::AH | Register::ESP => 4,
+            Register::CH | Register::EBP => 5,
+            Register::DH | Register::ESI => 6,
+            Register::BH | Register::EDI => 7,
+        }
+    }
 }
 
 impl TryFrom<String> for Register {
     type Error = String;
     fn try_from(s: String) -> Result<Self, Self::Error> {
         match s.as_str() {
+            "ah" => Ok(Register::AH),
+            "al" => Ok(Register::AL),
+            "bh" => Ok(Register::BH),
+            "bl" => Ok(Register::BL),
+            "ch" => Ok(Register::CH),
+            "cl" => Ok(Register::CL),
+            "dh" => Ok(Register::DH),
+            "dl" => Ok(Register::DL),
             "eax" => Ok(Register::EAX),
             "ebx" => Ok(Register::EBX),
             "ecx" => Ok(Register::ECX),
