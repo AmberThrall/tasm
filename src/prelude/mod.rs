@@ -1,13 +1,13 @@
 pub mod addr;
 pub mod elf;
-pub mod instr;
+pub mod instruction;
 pub mod program;
 pub mod parser;
 pub mod code_gen;
 mod utils;
 
 pub use addr::*;
-pub use instr::*;
+pub use instruction::*;
 pub use program::*;
 pub use parser::*;
 pub use code_gen::*;

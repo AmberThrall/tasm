@@ -1,4 +1,4 @@
-use super::{instr::*, utils, ASTNode, Program, Register, Value};
+use super::*;
 
 pub struct CodeGenerator {
     program: Program,
@@ -60,31 +60,29 @@ impl CodeGenerator {
                 }).collect();
 
                 for d in data {
-                    self.program.get_block_mut(self.current_block).unwrap().push(Box::new(
-                        RawData(d)
-                    ));
+                    self.program.get_block_mut(self.current_block).unwrap().push(Instruction::RawData(d));
                 }
             },
             "mov" => self.process_mov(arguments),
             "int" => self.process_int(arguments),
             "dec" => self.process_dec(arguments),
-            "jmp" => self.process_jmp(JumpConditional::None, arguments),
-            "jo" => self.process_jmp(JumpConditional::Overflow, arguments),
-            "jno" => self.process_jmp(JumpConditional::NotOverflow, arguments),
-            "jb" | "jnae" | "jc" => self.process_jmp(JumpConditional::Carry, arguments),
-            "jnb" | "jae" | "jnc" => self.process_jmp(JumpConditional::NotCarry, arguments),
-            "jz" | "je" => self.process_jmp(JumpConditional::Zero, arguments),
-            "jnz" | "jne" => self.process_jmp(JumpConditional::NotZero, arguments),
-            "jbe" | "jna" => self.process_jmp(JumpConditional::CarryOrZero, arguments),
-            "jnbe" | "ja" => self.process_jmp(JumpConditional::NotCarryAndNotZero, arguments),
-            "js" => self.process_jmp(JumpConditional::Sign, arguments),
-            "jns" => self.process_jmp(JumpConditional::NotSign, arguments),
-            "jp" | "jpe" => self.process_jmp(JumpConditional::Parity, arguments),
-            "jnp" | "jpo" => self.process_jmp(JumpConditional::NotParity, arguments),
-            "jl" | "jnge" => self.process_jmp(JumpConditional::Less, arguments),
-            "jnl" | "jge" => self.process_jmp(JumpConditional::NotLess, arguments),
-            "jle" | "jng" => self.process_jmp(JumpConditional::NotGreater, arguments),
-            "jnle" | "jg" => self.process_jmp(JumpConditional::Greater, arguments),
+            "jmp" => self.process_jmp(JumpCondition::None, arguments),
+            "jo" => self.process_jmp(JumpCondition::Overflow, arguments),
+            "jno" => self.process_jmp(JumpCondition::NotOverflow, arguments),
+            "jb" | "jnae" | "jc" => self.process_jmp(JumpCondition::Carry, arguments),
+            "jnb" | "jae" | "jnc" => self.process_jmp(JumpCondition::NotCarry, arguments),
+            "jz" | "je" => self.process_jmp(JumpCondition::Zero, arguments),
+            "jnz" | "jne" => self.process_jmp(JumpCondition::NotZero, arguments),
+            "jbe" | "jna" => self.process_jmp(JumpCondition::CarryOrZero, arguments),
+            "jnbe" | "ja" => self.process_jmp(JumpCondition::NotCarryAndNotZero, arguments),
+            "js" => self.process_jmp(JumpCondition::Sign, arguments),
+            "jns" => self.process_jmp(JumpCondition::NotSign, arguments),
+            "jp" | "jpe" => self.process_jmp(JumpCondition::Parity, arguments),
+            "jnp" | "jpo" => self.process_jmp(JumpCondition::NotParity, arguments),
+            "jl" | "jnge" => self.process_jmp(JumpCondition::Less, arguments),
+            "jnl" | "jge" => self.process_jmp(JumpCondition::NotLess, arguments),
+            "jle" | "jng" => self.process_jmp(JumpCondition::NotGreater, arguments),
+            "jnle" | "jg" => self.process_jmp(JumpCondition::Greater, arguments),
             _ => {
                 println!("Error: unknown instruction '{}'.", mnemonic);
             }
@@ -108,7 +106,7 @@ impl CodeGenerator {
         };
 
         self.program.get_block_mut(self.current_block).unwrap().push(
-            Box::new(MovData::new(register, value))
+            Instruction::MovImmediate { register, value }
         );
     }
 
@@ -122,9 +120,7 @@ impl CodeGenerator {
             _ => panic!("Error: argument of int is invalid, expected byte.")
         };
 
-        self.program.get_block_mut(self.current_block).unwrap().push(
-            Box::new(Int(*value as u8))
-        );
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Int(*value as u8));
     }
 
     fn process_dec(&mut self, arguments: Vec<ASTNode>) {
@@ -137,12 +133,10 @@ impl CodeGenerator {
             _ => panic!("Error: argument of int is invalid, expected byte.")
         };
 
-        self.program.get_block_mut(self.current_block).unwrap().push(
-            Box::new(Dec(register))
-        );
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Dec(register));
     }
 
-    fn process_jmp(&mut self, conditional: JumpConditional, arguments: Vec<ASTNode>) {
+    fn process_jmp(&mut self, condition: JumpCondition, arguments: Vec<ASTNode>) {
         if arguments.len() != 1 {
             panic!("Error: wrong number of arguments passed to jmp.");
         }
@@ -154,7 +148,7 @@ impl CodeGenerator {
         };
 
         self.program.get_block_mut(self.current_block).unwrap().push(
-            Box::new(JMPData(conditional, value))
+            Instruction::Jump { condition, addr: value }
         );
     }
 }

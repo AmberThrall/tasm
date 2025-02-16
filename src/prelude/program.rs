@@ -1,11 +1,11 @@
 use std::fmt::Pointer;
 
-use super::{Addr, Instr};
+use super::{Addr, Instruction};
 
 pub struct ProgramBlock {
     label: String,
     len: usize,
-    instrs: Vec<Box<dyn Instr>>,
+    instrs: Vec<Instruction>,
 }
 
 pub struct Program {
@@ -16,7 +16,7 @@ pub struct Program {
 
 impl ProgramBlock {
     /// Pushes an instruction to the block.
-    pub fn push(&mut self, instr: Box<dyn Instr>) {
+    pub fn push(&mut self, instr: Instruction) {
         self.len += instr.len();
         self.instrs.push(instr);
     }
@@ -85,15 +85,15 @@ impl Program {
     pub fn as_vec(&self) -> Vec<u8> {
         let mut addr = self.offset;
 
-        let mut dump = Vec::new();
+        let mut data = Vec::new();
         for block in &self.blocks {
             for instr in &block.instrs {
                 addr += instr.len() as u64;
-                let data = instr.as_vec(&self, addr);
-                dump.extend_from_slice(&data);
+                let instr_data = self.encode_instruction(instr, addr);
+                data.extend_from_slice(&instr_data);
             }
         }
 
-        dump
+        data
     }
 }
