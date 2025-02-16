@@ -15,30 +15,33 @@ impl CodeGenerator {
         };
 
         gen.program.new_block("__entry_point__");
-        gen.process_node(root);
+        match gen.process_node(root) {
+            Ok(_) => {},
+            Err(e) => panic!("Error occured: {}", e),
+        }
 
         gen.program.set_entrypoint(&gen.entry_point);
-
         gen.program
     }
 
-    fn process_node(&mut self, node: ASTNode) {
+    fn process_node(&mut self, node: ASTNode) -> Result<(), String> {
         match node {
             ASTNode::Program(stmts) => {
                 for stmt in stmts {
-                    self.process_node(stmt);
+                    self.process_node(stmt)?;
                 }
             }
             ASTNode::Label(label) => {
                 self.program.new_block(&label);
                 self.current_block += 1;
             }
-            ASTNode::Instruction { mnemonic, arguments } => self.process_instr(mnemonic, arguments),
-            _ => println!("Unimplemented: {:?}", node),
+            ASTNode::Instruction { mnemonic, arguments } => self.process_instr(mnemonic, arguments)?,
+            _ => return Err(format!("Unimplemented: {:?}", node)),
         }
+        Ok(())
     }
 
-    fn process_instr(&mut self, mnemonic: String, arguments: Vec<ASTNode>) {
+    fn process_instr(&mut self, mnemonic: String, arguments: Vec<ASTNode>) -> Result<(),String> {
         match mnemonic.as_str() {
             "global" => {
                 if arguments.len() != 1 {
@@ -63,92 +66,110 @@ impl CodeGenerator {
                     self.program.get_block_mut(self.current_block).unwrap().push(Instruction::RawData(d));
                 }
             },
-            "mov" => self.process_mov(arguments),
-            "int" => self.process_int(arguments),
-            "dec" => self.process_dec(arguments),
-            "jmp" => self.process_jmp(JumpCondition::None, arguments),
-            "jo" => self.process_jmp(JumpCondition::Overflow, arguments),
-            "jno" => self.process_jmp(JumpCondition::NotOverflow, arguments),
-            "jb" | "jnae" | "jc" => self.process_jmp(JumpCondition::Carry, arguments),
-            "jnb" | "jae" | "jnc" => self.process_jmp(JumpCondition::NotCarry, arguments),
-            "jz" | "je" => self.process_jmp(JumpCondition::Zero, arguments),
-            "jnz" | "jne" => self.process_jmp(JumpCondition::NotZero, arguments),
-            "jbe" | "jna" => self.process_jmp(JumpCondition::CarryOrZero, arguments),
-            "jnbe" | "ja" => self.process_jmp(JumpCondition::NotCarryAndNotZero, arguments),
-            "js" => self.process_jmp(JumpCondition::Sign, arguments),
-            "jns" => self.process_jmp(JumpCondition::NotSign, arguments),
-            "jp" | "jpe" => self.process_jmp(JumpCondition::Parity, arguments),
-            "jnp" | "jpo" => self.process_jmp(JumpCondition::NotParity, arguments),
-            "jl" | "jnge" => self.process_jmp(JumpCondition::Less, arguments),
-            "jnl" | "jge" => self.process_jmp(JumpCondition::NotLess, arguments),
-            "jle" | "jng" => self.process_jmp(JumpCondition::NotGreater, arguments),
-            "jnle" | "jg" => self.process_jmp(JumpCondition::Greater, arguments),
+            "mov" => self.mov(arguments)?,
+            "int" => self.int(arguments)?,
+            "inc" => self.inc(arguments)?,
+            "dec" => self.dec(arguments)?,
+            "jmp" => self.jmp(JumpCondition::None, arguments)?,
+            "jo" => self.jmp(JumpCondition::Overflow, arguments)?,
+            "jno" => self.jmp(JumpCondition::NotOverflow, arguments)?,
+            "jb" | "jnae" | "jc" => self.jmp(JumpCondition::Carry, arguments)?,
+            "jnb" | "jae" | "jnc" => self.jmp(JumpCondition::NotCarry, arguments)?,
+            "jz" | "je" => self.jmp(JumpCondition::Zero, arguments)?,
+            "jnz" | "jne" => self.jmp(JumpCondition::NotZero, arguments)?,
+            "jbe" | "jna" => self.jmp(JumpCondition::CarryOrZero, arguments)?,
+            "jnbe" | "ja" => self.jmp(JumpCondition::NotCarryAndNotZero, arguments)?,
+            "js" => self.jmp(JumpCondition::Sign, arguments)?,
+            "jns" => self.jmp(JumpCondition::NotSign, arguments)?,
+            "jp" | "jpe" => self.jmp(JumpCondition::Parity, arguments)?,
+            "jnp" | "jpo" => self.jmp(JumpCondition::NotParity, arguments)?,
+            "jl" | "jnge" => self.jmp(JumpCondition::Less, arguments)?,
+            "jnl" | "jge" => self.jmp(JumpCondition::NotLess, arguments)?,
+            "jle" | "jng" => self.jmp(JumpCondition::NotGreater, arguments)?,
+            "jnle" | "jg" => self.jmp(JumpCondition::Greater, arguments)?,
             _ => {
-                println!("Error: unknown instruction '{}'.", mnemonic);
+                return Err(format!("unknown instruction '{}'.", mnemonic));
             }
         }
+
+        Ok(())
     }
 
-    fn process_mov(&mut self, arguments: Vec<ASTNode>) {
+    fn mov(&mut self, arguments: Vec<ASTNode>) -> Result<(), String> {
         if arguments.len() != 2 {
-            panic!("Error: wrong number of arguments passed to mov.");
+            return Err(format!("wrong number of arguments passed to mov (got {}, expected 2).", arguments.len()));
         }
 
-        let register = match &arguments[0] {
-            ASTNode::Identifier(s) => Register::try_from(s.clone()).expect("error: unknown register."),
-            _ => panic!("Error: first argument of mov is invalid, expected register.")
-        };
-
+        let register = get_register(&arguments[0])?;
         let value = match &arguments[1] {
             ASTNode::Number(x) => Value::UInt(*x),
             ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
-            _ => panic!("Error: first argument of mov is invalid, expected number or label.")
+            _ => return Err("first argument of mov is invalid, expected number or label.".to_string())
         };
 
         self.program.get_block_mut(self.current_block).unwrap().push(
             Instruction::MovImmediate { register, value }
         );
+        Ok(())
     }
 
-    fn process_int(&mut self, arguments: Vec<ASTNode>) {
+    fn int(&mut self, arguments: Vec<ASTNode>) -> Result<(), String> {
         if arguments.len() != 1 {
-            panic!("Error: wrong number of arguments passed to int.");
+            return Err(format!("wrong number of arguments passed to int (got {}, expected 1).", arguments.len()));
         }
 
         let value = match &arguments[0] {
             ASTNode::Number(x) => x,
-            _ => panic!("Error: argument of int is invalid, expected byte.")
+            _ => return Err("argument of int is invalid, expected byte.".to_string())
         };
 
         self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Int(*value as u8));
+        Ok(())
     }
 
-    fn process_dec(&mut self, arguments: Vec<ASTNode>) {
+    fn inc(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
         if arguments.len() != 1 {
-            panic!("Error: wrong number of arguments passed to int.");
+            return Err(format!("wrong number of arguments passed to inc (got {}, expected 1).", arguments.len()));
         }
-
-        let register = match &arguments[0] {
-            ASTNode::Identifier(s) => Register::try_from(s.clone()).expect("error: unknown register."),
-            _ => panic!("Error: argument of int is invalid, expected byte.")
-        };
-
-        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Dec(register));
+        let register = get_register(&arguments[0])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Inc(register));
+        Ok(())
     }
 
-    fn process_jmp(&mut self, condition: JumpCondition, arguments: Vec<ASTNode>) {
+    fn dec(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
         if arguments.len() != 1 {
-            panic!("Error: wrong number of arguments passed to jmp.");
+            return Err(format!("wrong number of arguments passed to dec (got {}, expected 1).", arguments.len()));
+        }
+        let register = get_register(&arguments[0])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Dec(register));
+        Ok(())
+    }
+
+    fn jmp(&mut self, condition: JumpCondition, arguments: Vec<ASTNode>) -> Result<(), String> {
+        if arguments.len() != 1 {
+            return Err(format!("wrong number of arguments passed to jmp (got {}, expected 1).", arguments.len()));
         }
 
         let value = match &arguments[0] {
             ASTNode::Number(x) => Value::UInt(*x),
             ASTNode::Identifier(s) => Value::RelPointer(s.to_string()),
-            _ => panic!("Error: first argument of mov is invalid, expected number or label.")
+            _ => return Err("first argument of mov is invalid, expected number or label.".to_string())
         };
 
         self.program.get_block_mut(self.current_block).unwrap().push(
             Instruction::Jump { condition, addr: value }
         );
+        Ok(())
     }
 }
+
+fn get_register(argument: &ASTNode) -> Result<Register, String> {
+    match argument {
+        ASTNode::Identifier(s) => match Register::try_from(s.clone()) {
+            Ok(r) => Ok(r),
+            Err(s) => Err(s),
+        },
+        _ => Err("not an identifier.".to_string()), 
+    }
+}
+

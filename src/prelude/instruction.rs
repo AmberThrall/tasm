@@ -26,6 +26,7 @@ pub enum Instruction {
     RawData(Vec<u8>),
     Int(u8),
     MovImmediate { register: Register, value: Value },
+    Inc(Register),
     Dec(Register),
     Jump { condition: JumpCondition, addr: Value }
 }
@@ -37,6 +38,7 @@ impl Instruction {
             Self::RawData(x) => x.len(),
             Self::Int(_) => 2,
             Self::MovImmediate { register, value } => 5,
+            Self::Inc(_) => 1, 
             Self::Dec(_) => 1, 
             Self::Jump { condition, addr } => { if *condition == JumpCondition::None { 5 } else { 6 } },
         }
@@ -65,6 +67,18 @@ impl Program {
                     Register::EDI => 0xBF,
                 });
                 data.extend_from_slice(&value.as_vec(&self, cur_addr));
+            }
+            Instruction::Inc(register) => {
+                data.push(match register {
+                    Register::EAX => 0x40,
+                    Register::ECX => 0x41,
+                    Register::EDX => 0x42,
+                    Register::EBX => 0x43,
+                    Register::ESP => 0x44,
+                    Register::EBP => 0x45,
+                    Register::ESI => 0x46,
+                    Register::EDI => 0x47,
+                });
             }
             Instruction::Dec(register) => {
                 data.push(match register {
