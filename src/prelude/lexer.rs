@@ -123,6 +123,16 @@ pub enum Token {
     JNLE,
     #[token("jg")]
     JG,
+    #[token("add")]
+    Add,
+    #[token("sub")]
+    Sub,
+    #[token("and")]
+    And,
+    #[token("or")]
+    Or,
+    #[token("xor")]
+    Xor,
 
     // Whitespace
     #[regex(r"(;.*)?[\n\r]")]

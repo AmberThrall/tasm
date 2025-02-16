@@ -44,9 +44,29 @@ impl CodeGenerator {
             Node::Dec(reg) => self.push_instr(Instruction::Dec(*reg)),
             Node::Jump { condition, label } => self.push_instr(Instruction::Jump { condition: *condition, addr: Value::RelPointer(label.clone()) }),
             Node::JumpImm { condition, addr } => self.push_instr(Instruction::Jump { condition: *condition, addr: Value::UInt(*addr) }),
-            Node::MovImm(reg, x) => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UInt(*x) }),
+            Node::Mov(reg1, reg2) => self.push_instr(Instruction::Mov(*reg1, *reg2)),
+            Node::MovImm(reg, x) => match reg.bits() {
+                8 => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                32 => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UInt(*x) }),
+                _ => panic!("unreachable code"),
+            }
             Node::MovImmPointer(reg, label) => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::Pointer(label.clone()) }),
-            Node::Newline => (),
+            Node::AddImm(reg, x) => match reg.bits() {
+                8 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                32 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UInt(*x) }),
+                _ => panic!("unreachable code"),
+            }
+            Node::AddImmPointer(reg, label) => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::Pointer(label.clone()) }),
+            Node::SubImm(reg, x) => match reg.bits() {
+                8 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                32 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UInt(*x) }),
+                _ => panic!("unreachable code"),
+            }
+            Node::SubImmPointer(reg, label) => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::Pointer(label.clone()) }),
+            Node::And(a, b) => self.push_instr(Instruction::And(*a, *b)),
+            Node::Or(a, b) => self.push_instr(Instruction::Or(*a, *b)),
+            Node::XOr(a, b) => self.push_instr(Instruction::XOr(*a, *b)),
+            _ => (),
         }
     }
 }

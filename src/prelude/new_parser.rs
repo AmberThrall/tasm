@@ -16,8 +16,19 @@ pub enum Node {
     Dec(Register),
     Jump { condition: JumpCondition, label: String },
     JumpImm { condition: JumpCondition, addr: u32 },
+    Mov(Register, Register),
     MovImm(Register, u32),
     MovImmPointer(Register, String),
+    AddImm(Register, u32),
+    AddImmPointer(Register, String),
+    SubImm(Register, u32),
+    SubImmPointer(Register, String),
+    And(Register, Register),
+    Or(Register, Register),
+    XOr(Register, Register),
+    Register(Register),
+    Integer(u32),
+    Pointer(String),
     Newline
 }
 
@@ -109,8 +120,12 @@ impl<'a> Parser<'a> {
 
     // statement ::= label_statement | instruction
     fn statement(&mut self) -> Result<Node, Error> {
-        match self.peek() {
-            Some(Token::Identifier(_)) => self.label_statement(),
+        let token = self.peek();
+        match token {
+            Some(Token::Identifier(ident)) => match self.label_statement() {
+                Ok(x) => Ok(x),
+                Err(_) => self.error(&format!("unknown instruction '{}'.", ident)),
+            },
             Some(Token::Entry) => self.entry_statement(),
             Some(Token::Db) => self.db_statement(),
             Some(Token::Int) => self.int_statement(),
@@ -134,6 +149,11 @@ impl<'a> Parser<'a> {
             Some(Token::JLE) | Some(Token::JNG) => self.jump_statement(JumpCondition::NotGreater),
             Some(Token::JNLE) | Some(Token::JG) => self.jump_statement(JumpCondition::Greater),
             Some(Token::Mov) => self.mov_statement(),
+            Some(Token::Add) => self.add_statement(),
+            Some(Token::Sub) => self.sub_statement(),
+            Some(Token::And) => self.and_statement(),
+            Some(Token::Or) => self.or_statement(),
+            Some(Token::Xor) => self.xor_statement(),
             _ => self.error("expected a statement."),
         }
     }
@@ -246,33 +266,84 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // mov_statement ::= MOV required_whitespace (mov_imm_statement | ...)
+    // mov_statement ::= MOV required_whitespace reg_imm_or_reg_reg
     fn mov_statement(&mut self) -> Result<Node, Error> {
         self.march();
-        if !self.required_whitespace() { return self.error("expected whitespace after 'jmp'."); }
+        if !self.required_whitespace() { return self.error("expected whitespace after 'mov'."); }
 
-        self.mov_imm_statement()
-    }
-
-    // mov_imm_statement ::= register whitespace COMMA whitespace (integer | identifier)
-    fn mov_imm_statement(&mut self) -> Result<Node, Error> {
-        let register = self.register();
-        self.whitespace();
-        if self.march() != Some(Token::Comma) { return self.error("expected ',' in mov statement."); }
-        self.whitespace();
-
-        if register.is_none() { return self.error("invalid argument passed to mov (unknown register)."); }
-        let register = register.unwrap();
-
-        match self.peek() {
-            Some(Token::Identifier(x)) => { self.march(); Ok(Node::MovImmPointer(register, x)) }
-            _ => match self.integer() {
-                Ok(x) => Ok(Node::MovImm(register, x)),
-                Err(e) => self.error(&format!("invalid argument passed to mov ({}).", e)),
+        match self.reg_imm_or_reg_reg() {
+            Ok((reg, n)) => match n {
+                Node::Register(reg2) => Ok(Node::Mov(reg, reg2)),
+                Node::Pointer(label) => Ok(Node::MovImmPointer(reg, label)),
+                Node::Integer(x) => Ok(Node::MovImm(reg, x)),
+                _ => self.error("invalid arguments to mov (unknown error)."),
             }
+            Err(e) => self.error(&format!("invalid arguments to mov ({}).", e)),
         }
     }
 
+    // add_statement ::= ADD req_ws reg_imm 
+    fn add_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'add'."); }
+
+        match self.reg_imm() {
+            Ok((reg, n)) => match n {
+                Node::Pointer(label) => Ok(Node::AddImmPointer(reg, label)),
+                Node::Integer(x) => Ok(Node::AddImm(reg, x)),
+                _ => self.error("invalid arguments to add (unknown error)."),
+            }
+            Err(e) => self.error(&format!("invalid arguments to add ({}).", e)),
+        }
+    }
+
+    // sub_statement ::= SUB req_ws reg_imm 
+    fn sub_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'sub'."); }
+
+        match self.reg_imm() {
+            Ok((reg, n)) => match n {
+                Node::Pointer(label) => Ok(Node::SubImmPointer(reg, label)),
+                Node::Integer(x) => Ok(Node::SubImm(reg, x)),
+                _ => self.error("invalid arguments to sub (unknown error)."),
+            }
+            Err(e) => self.error(&format!("invalid arguments to sub ({}).", e)),
+        }
+    }
+
+    // and_statement ::= AND req_ws reg_reg
+    fn and_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'and'."); }
+
+        match self.reg_reg() {
+            Ok((a,b)) => Ok(Node::And(a, b)),
+            Err(e) => self.error(&format!("invalid argument passed to and ({})", e)),
+        }
+    }
+
+    // or_statement ::= AND req_ws reg_reg
+    fn or_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'or'."); }
+
+        match self.reg_reg() {
+            Ok((a,b)) => Ok(Node::Or(a, b)),
+            Err(e) => self.error(&format!("invalid argument passed to or ({})", e)),
+        }
+    }
+
+    // xor_statement ::= AND req_ws reg_reg
+    fn xor_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'xor'."); }
+
+        match self.reg_reg() {
+            Ok((a,b)) => Ok(Node::XOr(a, b)),
+            Err(e) => self.error(&format!("invalid argument passed to xor ({})", e)),
+        }
+    }
     // whitespace ::= WHITESPACE*
     fn whitespace(&mut self) {
         while let Some(token) = self.peek() {
@@ -339,6 +410,58 @@ impl<'a> Parser<'a> {
                 Err(format!("{} > 0xFFFFFFFF", x as u64))     
             } else { Ok(x as u32) }
             _ => Err("not a number".to_string()),
+        }
+    }
+
+    // reg_reg ::= register ws COMMA ws register
+    fn reg_reg(&mut self) -> Result<(Register, Register), String> {
+        let a = self.register();
+        self.whitespace();
+        if self.march() != Some(Token::Comma) { return Err("missing ','".to_string()); }
+        self.whitespace();
+        let b = self.register();
+
+        if a.is_none() || b.is_none() { return Err("unknown register".to_string()); }
+        Ok((a.unwrap(), b.unwrap()))
+    }
+
+    // reg_imm ::= register ws COMMA ws (integer | identifier)
+    fn reg_imm(&mut self) -> Result<(Register, Node), String> {
+        let a = self.register();
+        self.whitespace();
+        if self.march() != Some(Token::Comma) { return Err("missing ','".to_string()); }
+        self.whitespace();
+
+        if a.is_none() { return Err("unknown register".to_string()); }
+
+        match self.peek() {
+            Some(Token::Identifier(x)) => { self.march(); Ok((a.unwrap(), Node::Pointer(x.clone()))) }
+            _ => match self.integer() {
+                Ok(x) => Ok((a.unwrap(), Node::Integer(x))),
+                Err(e) => Err("not a integer".to_string()),
+            }
+        }
+    }
+
+    // reg_imm_or_reg_reg ::= reg_reg | reg_imm
+    fn reg_imm_or_reg_reg(&mut self) -> Result<(Register, Node), String> {
+        let a = self.register();
+        self.whitespace();
+        if self.march() != Some(Token::Comma) { return Err("missing ','".to_string()); }
+        self.whitespace();
+
+        if a.is_none() { return Err("unknown register".to_string()); }
+
+        match self.peek() {
+            Some(Token::Identifier(x)) => { self.march(); Ok((a.unwrap(), Node::Pointer(x.clone()))) },
+            Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
+                Ok(x) => Ok((a.unwrap(), Node::Integer(x))),
+                Err(e) => Err(e),
+            }
+            _ => match self.register() {
+                Some(reg) => Ok((a.unwrap(), Node::Register(reg))), 
+                None => Err("unknown register".to_string()),
+            }
         }
     }
 
