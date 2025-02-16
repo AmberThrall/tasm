@@ -73,7 +73,10 @@ fn build_ast(pair: Pair<Rule>) -> ASTNode {
                     let x = u32::from_str_radix(without_prefix, 16).unwrap();
                     ASTNode::Number(x)
                 },
-                Rule::string => ASTNode::String(pair.as_str().to_string()),
+                Rule::string => {
+                    let s = pair.as_str();
+                    ASTNode::String(s[1..s.len()-1].to_string())
+                },
                 _ => panic!("Something went wrong, got a {:?}", pair)
             }
         },

@@ -1,13 +1,13 @@
 global _start
 
 _msg: 
-    db "Hello World",0xA
+    db "Hello World!",0xA
 
 _start:
     mov ebx, 1      ; stdout
     mov ecx, _msg
-    mov edx, 14    ; message length
-    mov edi, 5      ; print it 5 times
+    mov edx, 13    ; message length
+    mov edi, 3      ; print it 5 times
 
 _loop:
     mov eax, 4  ; write
