@@ -9,11 +9,11 @@ pub struct ASMParser;
 
 #[derive(Debug)]
 pub enum ASTNode {
-    Program(Vec<Box<ASTNode>>),
+    Program(Vec<ASTNode>),
     Label(String),
     Instruction {
         mnemonic: String,
-        arguments: Vec<Box<ASTNode>>,
+        arguments: Vec<ASTNode>,
     },
     Argument(Box<ASTNode>),
     Identifier(String),
@@ -33,7 +33,7 @@ fn build_ast(pair: Pair<Rule>) -> ASTNode {
             let mut statements = Vec::new();
             for record in pair.into_inner() {
                 match record.as_rule() {
-                    Rule::statement => statements.push(Box::new(build_ast(record))),
+                    Rule::statement => statements.push(build_ast(record)),
                     _ => (),
                 }
             }
@@ -54,7 +54,7 @@ fn build_ast(pair: Pair<Rule>) -> ASTNode {
             if let Some(pairs) = pairs.next() {
                 let mut arguments = Vec::new();
                 for record in pairs.into_inner() {
-                    arguments.push(Box::new(build_ast(record)));
+                    arguments.push(build_ast(record));
                 }
                 ASTNode::Instruction { mnemonic: ident.as_str().to_string(), arguments } 
             } else {

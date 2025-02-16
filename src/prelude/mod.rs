@@ -3,12 +3,14 @@ pub mod elf;
 pub mod instr;
 pub mod program;
 pub mod parser;
+pub mod code_gen;
 mod utils;
 
 pub use addr::*;
 pub use instr::*;
 pub use program::*;
 pub use parser::*;
+pub use code_gen::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Endianness {
@@ -19,6 +21,23 @@ pub enum Endianness {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Register {
     EAX, EBX, ECX, ESP, EBP, EDI, ESI, EDX,
+}
+
+impl TryFrom<String> for Register {
+    type Error = String;
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        match s.as_str() {
+            "eax" => Ok(Register::EAX),
+            "ebx" => Ok(Register::EBX),
+            "ecx" => Ok(Register::ECX),
+            "esp" => Ok(Register::ESP),
+            "ebp" => Ok(Register::EBP),
+            "edi" => Ok(Register::EDI),
+            "esi" => Ok(Register::ESI),
+            "edx" => Ok(Register::EDX),
+            _ => Err(format!("unkown register {}", s))
+        }
+    }
 }
 
 pub enum Value {

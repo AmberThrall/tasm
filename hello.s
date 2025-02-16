@@ -6,7 +6,7 @@ _msg:
 _start:
     mov ebx, 1      ; stdout
     mov ecx, _msg
-    mov edx, 12     ; message length
+    mov edx, 14    ; message length
     mov edi, 5      ; print it 5 times
 
 _loop:

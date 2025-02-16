@@ -48,6 +48,11 @@ impl Program {
         self.blocks.last_mut().unwrap()
     }
 
+    /// Gets a mutable refence to a block by index
+    pub fn get_block_mut(&mut self, idx: usize) -> Option<&mut ProgramBlock> {
+        self.blocks.get_mut(idx)
+    }
+
     /// Gets the length of the program in bytes.
     pub fn len(&self) -> usize {
         let mut len = 0;
