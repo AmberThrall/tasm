@@ -22,3 +22,4 @@ string      = @{
 }
 
 ws = _{ " " | "\t" | NEWLINE }
+COMMENT = _{ ";" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
