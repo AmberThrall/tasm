@@ -41,9 +41,9 @@ impl Node {
 
 #[derive(Debug, Clone)]
 pub struct Error {
-    message: String,
-    line_no: usize,
-    token: Option<Token>,
+    pub message: String,
+    pub line_no: usize,
+    pub token: Option<Token>,
 }
 
 pub struct Parser<'a> {
