@@ -51,6 +51,9 @@ impl CodeGenerator {
                 _ => panic!("unreachable code"),
             }
             Node::MovImmPointer(reg, label) => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::Pointer(label.clone()) }),
+            Node::MovMemory(addr, reg) => self.push_instr(Instruction::MovMemory { addr: Value::UInt(*addr), register: *reg }),
+            Node::MovMemoryPointer(label, reg) => self.push_instr(Instruction::MovMemory { addr: Value::Pointer(label.clone()), register: *reg }),
+            Node::MovMemoryRegister(dest, reg) => self.push_instr(Instruction::MovMemoryReg { dest: *dest, src: *reg  }),
             Node::AddImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UByte(*x as u8) }),
                 32 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UInt(*x) }),

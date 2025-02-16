@@ -18,7 +18,7 @@ _skip_a:
     add dl, 0x30
     dec ecx
     inc edi
-    db 0x88, 0x11                       ; mov [ecx], dl
+    mov [ecx], dl
     db 0x85, 0xC0                       ; cmp eax, 0
     jnz _loop
 

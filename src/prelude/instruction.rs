@@ -29,7 +29,7 @@ pub enum Instruction {
     Int(u8),
     Mov(Register, Register),
     MovImmediate { register: Register, value: Value },
-    MovRM32R32 { dest: Register, src: Register },
+    MovMemoryReg { dest: Register, src: Register },
     MovMemory { addr: Value, register: Register },
     Inc(Register),
     Dec(Register),
@@ -50,7 +50,7 @@ impl Instruction {
             Self::Int(_) => 2,
             Self::Mov(_, _) => 2,
             Self::MovImmediate { register, value } => if register.bits() == 32 { 5 } else { 2 },
-            Self::MovRM32R32 { dest, src } => if *dest == Register::ESP || *dest == Register::EBP { 3 } else { 2 },
+            Self::MovMemoryReg { dest, src } => if *dest == Register::ESP || *dest == Register::EBP { 3 } else { 2 },
             Self::MovMemory { addr, register } => { if *register == Register::EAX { 6 } else { 7 } },
             Self::Inc(_) => 1, 
             Self::Dec(_) => 1, 
@@ -97,9 +97,9 @@ impl Program {
                 data.push(start + register.offset());
                 data.extend_from_slice(&value.as_vec(&self, cur_addr));
             }
-            Instruction::MovRM32R32 { dest, src } => {
+            Instruction::MovMemoryReg { dest, src } => {
                 // See table 2-2 of intel manual
-                data.push(0x89);
+                data.push(if src.bits() == 8 { 0x88 } else { 0x89 });
                 let op = src.offset();
                 let rm = dest.offset();
                 match dest {
