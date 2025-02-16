@@ -1,15 +1,23 @@
-.globl _start
+global _start
 
-.section .data
-msg:
-    .ascii "Hello World\n"
+_msg: 
+    db "Hello World",0xA
 
-.section .text
 _start:
-    movl $4, %eax       # sys call for write
-    movl $1, %ebx       # set fd to 1 (stdout)
-    movl $msg, %ecx     # set buffer address
-    movl $12, %edx      # set msg size
-    int $0x80           # interrupt kernel to make sys call
+    mov ebx, 1
+    mov ecx, _msg
+    mov edx, 12
+    mov edi, 5
 
+_loop:
+    mov eax, 4
+    int 0x80
+
+    dec edi
+    jnz _loop
+
+_exit:
+    mov eax, 1
+    mov ebx, 0
+    int 0x80
 

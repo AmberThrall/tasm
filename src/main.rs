@@ -1,7 +1,20 @@
 mod prelude;
 use prelude::*;
+use std::fs;
 
 fn main() {
+    // Load and parse the code.
+    let code: String = fs::read_to_string("hello.s").expect("failed to open file."); 
+    let ast = match parse(&code) {
+        Ok(node) => node,
+        Err(e) => {
+            println!("Parsing error occured: {}", e);
+            return;
+        }
+    };
+
+    println!("AST:\n{:?}", ast);
+
     let message = "Hello World!\n";
 
     // Construct the program.

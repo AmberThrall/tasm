@@ -2,11 +2,13 @@ pub mod addr;
 pub mod elf;
 pub mod instr;
 pub mod program;
+pub mod parser;
 mod utils;
 
 pub use addr::*;
 pub use instr::*;
 pub use program::*;
+pub use parser::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Endianness {

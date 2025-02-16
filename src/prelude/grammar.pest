@@ -1,0 +1,24 @@
+program     =  {
+    (ws* ~ statement ~ ws*)*
+}
+statement   =  {
+    label
+  | instruction
+}
+label       =  { identifier ~ ws* ~ ":" }
+instruction =  {
+    identifier ~ ws+ ~ arguments
+  | identifier
+}
+arguments   =  { argument ~ ws* ~ ("," ~ ws* ~ argument)* }
+argument    =  { value }
+value       =  { hex_number | number | string | identifier }
+identifier  = @{ ("_" | ASCII_ALPHA) ~ (ASCII_ALPHANUMERIC | "_")* }
+hex_number  = @{ "0x" ~ ASCII_HEX_DIGIT+ }
+number      = @{ ("+" | "-")? ~ ASCII_DIGIT+ }
+string      = @{
+    ("'" ~ ("''" | (!"'" ~ ANY))* ~ "'")
+  | ("\"" ~ ("\"\"" | (!"\"" ~ ANY))* ~ "\"")
+}
+
+ws = _{ " " | "\t" | NEWLINE }
