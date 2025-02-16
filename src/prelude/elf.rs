@@ -224,9 +224,9 @@ impl ELFProgramHeader {
         }, endianness);
         for i in 0..4 { dump.push(bytes[i]); }
 
-        // p_flags: 0x05 = exectuable + readable. (64-bit only).
+        // p_flags: 0x07 = exectuable + readable + readable. (64-bit only).
         if self.class == ELFClass::X86_64 {
-            let bytes = dump_dword(0x05, endianness);
+            let bytes = dump_dword(0x07, endianness);
             for i in 0..4 { dump.push(bytes[i]); }
         }
 
@@ -284,9 +284,9 @@ impl ELFProgramHeader {
             }
         }
 
-        // p_flags: 0x05 = exectuable + readable. (32-bit only).
+        // p_flags: 0x05 = exectuable + writeable + readable. (32-bit only).
         if self.class == ELFClass::X86 {
-            let bytes = dump_dword(0x05, endianness);
+            let bytes = dump_dword(0x07, endianness);
             for i in 0..4 { dump.push(bytes[i]); }
         }
 

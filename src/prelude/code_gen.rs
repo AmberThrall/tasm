@@ -87,6 +87,12 @@ impl CodeGenerator {
             "jnl" | "jge" => self.jmp(JumpCondition::NotLess, arguments)?,
             "jle" | "jng" => self.jmp(JumpCondition::NotGreater, arguments)?,
             "jnle" | "jg" => self.jmp(JumpCondition::Greater, arguments)?,
+            "add" => self.add(arguments)?,
+            "sub" => self.sub(arguments)?,
+            "bswap" => self.bswap(arguments)?,
+            "and" => self.and(arguments)?,
+            "or" => self.or(arguments)?,
+            "xor" => self.xor(arguments)?,
             _ => {
                 return Err(format!("unknown instruction '{}'.", mnemonic));
             }
@@ -100,16 +106,47 @@ impl CodeGenerator {
             return Err(format!("wrong number of arguments passed to mov (got {}, expected 2).", arguments.len()));
         }
 
-        let register = get_register(&arguments[0])?;
-        let value = match &arguments[1] {
-            ASTNode::Number(x) => Value::UInt(*x),
-            ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
-            _ => return Err("first argument of mov is invalid, expected number or label.".to_string())
-        };
+        match &arguments[0] {
+            ASTNode::Identifier(_) => {
+                let register = get_register(&arguments[0])?;
+                let value = match &arguments[1] {
+                    ASTNode::Number(x) => Value::UInt(*x),
+                    ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
+                    _ => return Err("second argument of mov is invalid, expected number or label.".to_string())
+                };
+                self.program.get_block_mut(self.current_block).unwrap().push(
+                    Instruction::MovImmediate { register, value }
+                );
+            }
+            ASTNode::Address(arg0) => {
+                let mut addr = None;
+                let arg0 = (**arg0).clone();
+                
+                match arg0 {
+                    ASTNode::Identifier(ref s) => {
+                        if let Ok(dest) = get_register(&arg0) {
+                            let src = get_register(&arguments[1])?;                         
+                            self.program.get_block_mut(self.current_block).unwrap().push(
+                                Instruction::MovRM32R32 { dest, src }
+                            );
+                            return Ok(())
+                        } else {
+                            addr = Some(Value::Pointer(s.to_string()));
+                        }
+                    }
+                    ASTNode::Number(x) => addr = Some(Value::UInt(x)),
+                    _ => return Err(format!("invalid address given to mov ({:?})", arg0)),
+                }
 
-        self.program.get_block_mut(self.current_block).unwrap().push(
-            Instruction::MovImmediate { register, value }
-        );
+                self.program.get_block_mut(self.current_block).unwrap().push(
+                    Instruction::MovMemory { addr: addr.unwrap(), register: get_register(&arguments[1])? }
+                );
+            }
+            _ => return Err(format!("invalid first argument to mov ({:?})", arguments[0]))
+        }
+        
+
+        
         Ok(())
     }
 
@@ -159,6 +196,81 @@ impl CodeGenerator {
         self.program.get_block_mut(self.current_block).unwrap().push(
             Instruction::Jump { condition, addr: value }
         );
+        Ok(())
+    }
+    
+    fn add(&mut self, arguments: Vec<ASTNode>) -> Result<(), String> {
+        if arguments.len() != 2 {
+            return Err(format!("wrong number of arguments passed to add (got {}, expected 2).", arguments.len()));
+        }
+
+        let register = get_register(&arguments[0])?;
+        let value = match &arguments[1] {
+            ASTNode::Number(x) => Value::UInt(*x),
+            ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
+            _ => return Err("second argument of add is invalid, expected number or label.".to_string())
+        };
+
+        self.program.get_block_mut(self.current_block).unwrap().push(
+            Instruction::AddImmediate { register, value }
+        );
+        Ok(())
+    }
+
+    fn sub(&mut self, arguments: Vec<ASTNode>) -> Result<(), String> {
+        if arguments.len() != 2 {
+            return Err(format!("wrong number of arguments passed to sub (got {}, expected 2).", arguments.len()));
+        }
+
+        let register = get_register(&arguments[0])?;
+        let value = match &arguments[1] {
+            ASTNode::Number(x) => Value::UInt(*x),
+            ASTNode::Identifier(s) => Value::Pointer(s.to_string()),
+            _ => return Err("second argument of sub is invalid, expected number or label.".to_string())
+        };
+
+        self.program.get_block_mut(self.current_block).unwrap().push(
+            Instruction::SubImmediate { register, value }
+        );
+        Ok(())
+    }
+
+    fn bswap(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
+        if arguments.len() != 1 {
+            return Err(format!("wrong number of arguments passed to bswap (got {}, expected 1).", arguments.len()));
+        }
+        let register = get_register(&arguments[0])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::ByteSwap(register));
+        Ok(())
+    }
+
+    fn and(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
+        if arguments.len() != 2 {
+            return Err(format!("wrong number of arguments passed to and (got {}, expected 2).", arguments.len()));
+        }
+        let a = get_register(&arguments[0])?;
+        let b = get_register(&arguments[1])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::And(a, b));
+        Ok(())
+    }
+
+    fn or(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
+        if arguments.len() != 2 {
+            return Err(format!("wrong number of arguments passed to or (got {}, expected 2).", arguments.len()));
+        }
+        let a = get_register(&arguments[0])?;
+        let b = get_register(&arguments[1])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::Or(a, b));
+        Ok(())
+    }
+
+    fn xor(&mut self, arguments: Vec<ASTNode>) -> Result<(),String> {
+        if arguments.len() != 2 {
+            return Err(format!("wrong number of arguments passed to xor (got {}, expected 2).", arguments.len()));
+        }
+        let a = get_register(&arguments[0])?;
+        let b = get_register(&arguments[1])?;
+        self.program.get_block_mut(self.current_block).unwrap().push(Instruction::XOr(a, b));
         Ok(())
     }
 }

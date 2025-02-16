@@ -20,7 +20,7 @@ pub enum Endianness {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Register {
-    EAX, EBX, ECX, ESP, EBP, EDI, ESI, EDX,
+    EAX = 0, ECX = 1, EDX = 2, EBX = 3, ESP = 4, EBP = 5, ESI = 6, EDI = 7,
 }
 
 impl TryFrom<String> for Register {

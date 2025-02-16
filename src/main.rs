@@ -4,7 +4,7 @@ use std::fs;
 
 fn main() {
     // Load and parse the code.
-    let code: String = fs::read_to_string("hello.s").expect("failed to open file."); 
+    let code: String = fs::read_to_string("tests/subtract.s").expect("failed to open file."); 
     let ast = match parse(&code) {
         Ok(node) => node,
         Err(e) => {

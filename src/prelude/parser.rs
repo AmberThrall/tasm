@@ -7,7 +7,7 @@ use pest_derive::Parser;
 #[grammar="prelude/grammar.pest"]
 pub struct ASMParser;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ASTNode {
     Program(Vec<ASTNode>),
     Label(String),
@@ -15,7 +15,7 @@ pub enum ASTNode {
         mnemonic: String,
         arguments: Vec<ASTNode>,
     },
-    Argument(Box<ASTNode>),
+    Address(Box<ASTNode>),
     Identifier(String),
     Number(u32),
     String(String)
@@ -66,6 +66,10 @@ fn build_ast(pair: Pair<Rule>) -> ASTNode {
             let pair = pair.into_inner().next().unwrap();
             match pair.as_rule() {
                 Rule::identifier => ASTNode::Identifier(pair.as_str().to_string()),
+                Rule::address => {
+                    let pair = pair.into_inner().next().unwrap();
+                    ASTNode::Address(Box::new(build_ast(pair)))
+                }
                 Rule::number => ASTNode::Number(pair.as_str().parse::<i64>().unwrap() as u32),
                 Rule::hex_number => {
                     let s = pair.as_str().to_string();
