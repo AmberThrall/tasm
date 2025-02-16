@@ -2,6 +2,8 @@ pub mod addr;
 pub mod elf;
 pub mod instruction;
 pub mod program;
+pub mod lexer;
+pub mod new_parser;
 pub mod parser;
 pub mod code_gen;
 mod utils;
@@ -9,6 +11,7 @@ mod utils;
 pub use addr::*;
 pub use instruction::*;
 pub use program::*;
+pub use lexer::*;
 pub use parser::*;
 pub use code_gen::*;
 

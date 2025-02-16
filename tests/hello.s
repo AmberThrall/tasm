@@ -1,4 +1,4 @@
-global _start
+entry _start
 
 _msg: 
     db "Hello World!",0xA

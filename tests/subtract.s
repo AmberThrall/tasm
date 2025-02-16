@@ -1,4 +1,4 @@
-global _start
+entry _start
 
 _start:
     ; Compute 0x6C - 0x54 and write the result to stdout in base (EBX)
