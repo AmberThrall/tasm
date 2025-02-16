@@ -3,8 +3,6 @@ pub mod elf;
 pub mod instruction;
 pub mod program;
 pub mod lexer;
-pub mod new_parser;
-pub mod new_code_gen;
 pub mod parser;
 pub mod code_gen;
 mod utils;

@@ -5,7 +5,7 @@ use std::fs;
 fn main() {
     // Load and parse the code.
     let code: String = fs::read_to_string("tests/subtract.s").expect("failed to open file."); 
-    let ast = match new_parser::Parser::parse(&code) {
+    let ast = match Parser::parse(&code) {
         Ok(node) => node,
         Err(e) => {
             println!("Error on line {}: {}", e.line_no, e.message);
@@ -14,7 +14,7 @@ fn main() {
     };
 
     // Generate the code
-    let program = new_code_gen::CodeGenerator::generate(&ast);
+    let program = CodeGenerator::generate(&ast);
 
     // Write the ELF binary
     let elf = elf::ELF::new_x86(program);
