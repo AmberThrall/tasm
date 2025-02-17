@@ -1,6 +1,6 @@
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use super::*;
-use super::{Node, Token};
 
 #[derive(Debug, Clone)]
 enum Expr {
@@ -42,8 +42,15 @@ fn precedence(token: &Token) -> usize {
     }
 }
 
+pub struct CodeGenError {
+    pub file: String,
+    pub line_no: usize,
+    pub message: String,
+}
+
 pub struct CodeGenerator {
     program: Program,
+    cwd: PathBuf,
     entry_point: String,
     block_addrs: HashMap<String, u32>,
     variables: HashMap<String, u32>,
@@ -51,9 +58,12 @@ pub struct CodeGenerator {
 }
 
 impl CodeGenerator {
-    pub fn generate(root: &Node) -> Program {
+    pub fn generate(path: &PathBuf) -> Result<Program, CodeGenError> {
+        let cwd = Path::new(path).parent().unwrap().to_path_buf();
+
         let mut gen = CodeGenerator { 
             program: Program::new(), 
+            cwd,
             entry_point: "__entry_point__".to_string(),
             block_addrs: HashMap::new(),
             variables: HashMap::new(),
@@ -62,10 +72,25 @@ impl CodeGenerator {
 
         gen.program.new_block("__entry_point__");
         gen.block_addrs.insert("__entry_point__".to_string(), 0);
-        gen.process(&root);
+
+        let root = gen.parse_file(&path)?;
+        gen.process(&root)?;
 
         gen.program.set_entrypoint(&gen.entry_point);
-        gen.program
+        Ok(gen.program)
+    }
+
+    fn parse_file(&self, path: &Path) -> Result<Node, CodeGenError> {
+        // Load and parse the code.
+        let code: String = std::fs::read_to_string(path).expect("failed to open file."); 
+        match Parser::parse(&code) {
+            Ok(node) => Ok(node),
+            Err(e) => Err(CodeGenError {
+                file: path.display().to_string(),
+                line_no: e.line_no,
+                message: e.message
+            })
+        }
     }
 
     fn push_instr(&mut self, instr: Instruction) {
@@ -86,11 +111,24 @@ impl CodeGenerator {
         }
     }
 
-    fn process(&mut self, node: &Node) {
+    fn process(&mut self, node: &Node) -> Result<(), CodeGenError> {
         match node {
+            Node::Include(filename) => {
+                let old_cwd = self.cwd.clone();
+                self.cwd.push(filename);
+
+                let root = self.parse_file(&self.cwd)?;
+
+                // Set the new CWD
+                self.cwd = Path::new(&self.cwd).parent().unwrap().to_path_buf();
+                self.process(&root)?;
+
+                // Revert back to the old cwd
+                self.cwd = old_cwd;
+            }
             Node::Program(stmts) => {
                 for stmt in stmts {
-                    self.process(stmt);
+                    self.process(stmt)?;
                 }
             }
             Node::Label(label) => {
@@ -181,6 +219,7 @@ impl CodeGenerator {
             }
             _ => (),
         }
+        Ok(())
     }
 
     fn evaluate_expr(&self, expr: &Expr) -> u32 {

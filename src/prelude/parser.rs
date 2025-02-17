@@ -125,6 +125,7 @@ impl<'a> Parser<'a> {
             Some(Token::SHL) => self.shl_statement(),
             Some(Token::SHR) => self.shr_statement(),
             Some(Token::EQU) => self.equ_statement(),
+            Some(Token::Include) => self.include_statement(),
             _ => self.error(&format!("unexpected token '{:?}'.", token)),
         }
     }
@@ -853,6 +854,17 @@ impl<'a> Parser<'a> {
         match token {
             Some(Token::Plus) | Some(Token::Minus) | Some(Token::Multiply) | Some(Token::Divide) => Some(token.clone().unwrap()),
             _ => None,
+        }
+    }
+
+    // include_statement ::= INCLUDE required_whitespace STRING 
+    fn include_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'EQU'."); }
+
+        match self.march() {
+            Some(Token::String(x)) => Ok(Node::Include(x)),
+            _ => self.error("invalid argument passed to INCLUDE, expected string."),
         }
     }
 }

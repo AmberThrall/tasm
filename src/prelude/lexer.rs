@@ -39,6 +39,8 @@ pub enum Token {
     DLPseudo,
     #[token("EQU")]
     EQU,
+    #[token("INCLUDE")]
+    Include,
 
     // Instructions
     #[token("mov")]

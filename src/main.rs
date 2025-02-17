@@ -14,10 +14,6 @@ struct Args {
     /// Output file
     #[arg(short, long, default_value = "a.out")]
     output: PathBuf,
-
-    /// Print the abstract syntax tree to the terminal
-    #[arg(long, default_value_t = false)]
-    print_ast: bool,
 }
 
 fn main() {
@@ -25,23 +21,14 @@ fn main() {
     let args = Args::parse();
 
     // Load and parse the code.
-    let code: String = fs::read_to_string(args.input).expect("failed to open file."); 
-    let ast = match prelude::Parser::parse(&code) {
-        Ok(node) => node,
+    //let code: String = fs::read_to_string(args.input).expect("failed to open file."); 
+    let program = match CodeGenerator::generate(&args.input) {
+        Ok(p) => p,
         Err(e) => {
-            println!("Error on line {}: {}", e.line_no, e.message);
+            println!("Error on line {} in \"{}\": {}", e.line_no, e.file, e.message);
             std::process::exit(1);
         }
     };
-
-    // Print ast
-    if args.print_ast {
-        println!("Abstract Syntax Tree:");
-        ast.print();
-    }
-
-    // Generate the code
-    let program = CodeGenerator::generate(&ast);
 
     // Write the ELF binary
     let elf = elf::ELF::new_x86(program);

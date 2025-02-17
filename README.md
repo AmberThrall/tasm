@@ -1,8 +1,6 @@
 # TASM 
 
 **TASM** is a tiny x86 assembler for Linux targeting System V.
-It only contains a subset of the instructions.
-There is no linker, your entire source code must be contained in a single source file.
 
 # Installing
 
@@ -40,3 +38,5 @@ _start:
 ```
 
 More examples can be seen in the `tests` directory.
+
+Note, TASM only contains a subset of the instructions.
