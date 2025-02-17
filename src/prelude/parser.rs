@@ -25,8 +25,10 @@ pub enum Node {
     MovFromMemory(Register, u32),
     MovFromMemoryPointer(Register, String),
     MovFromMemoryRegister(Register, Register),
+    Add(Register, Register),
     AddImm(Register, u32),
     AddImmPointer(Register, String),
+    Sub(Register, Register),
     SubImm(Register, u32),
     SubImmPointer(Register, String),
     Mul(Register),
@@ -381,13 +383,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // add_statement ::= ADD req_ws reg_imm 
+    // add_statement ::= ADD req_ws reg_imm_or_reg_reg
     fn add_statement(&mut self) -> Result<Node, Error> {
         self.march();
         if !self.required_whitespace() { return self.error("expected whitespace after 'add'."); }
 
-        match self.reg_imm() {
+        match self.reg_imm_or_reg_reg() {
             Ok((reg, n)) => match n {
+                Node::Register(reg2) => Ok(Node::Add(reg, reg2)),
                 Node::Pointer(label) => Ok(Node::AddImmPointer(reg, label)),
                 Node::Integer(x) => Ok(Node::AddImm(reg, x)),
                 _ => self.error("invalid arguments to add (unknown error)."),
@@ -396,13 +399,14 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // sub_statement ::= SUB req_ws reg_imm 
+    // sub_statement ::= SUB req_ws reg_imm_or_reg_reg
     fn sub_statement(&mut self) -> Result<Node, Error> {
         self.march();
         if !self.required_whitespace() { return self.error("expected whitespace after 'sub'."); }
 
-        match self.reg_imm() {
+        match self.reg_imm_or_reg_reg() {
             Ok((reg, n)) => match n {
+                Node::Register(reg2) => Ok(Node::Sub(reg, reg2)),
                 Node::Pointer(label) => Ok(Node::SubImmPointer(reg, label)),
                 Node::Integer(x) => Ok(Node::SubImm(reg, x)),
                 _ => self.error("invalid arguments to sub (unknown error)."),

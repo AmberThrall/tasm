@@ -36,7 +36,9 @@ pub enum Instruction {
     Inc(Register),
     Dec(Register),
     Jump { condition: JumpCondition, addr: Value },
+    Add(Register, Register),
     AddImmediate { register: Register, value: Value },
+    Sub(Register, Register),
     SubImmediate { register: Register, value: Value },
     Multiply(Register),
     Divide(Register),
@@ -68,10 +70,12 @@ impl Instruction {
             Self::Inc(_) => 1, 
             Self::Dec(_) => 1, 
             Self::Jump { condition, addr } => { if *condition == JumpCondition::None { 5 } else { 6 } },
+            Self::Add(_, _) => 2,
             Self::AddImmediate { register, value } => { 
                 let data_len = if register.bits() == 32 { 4 } else { 1 };
                 if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
             },
+            Self::Sub(_, _) => 2,
             Self::SubImmediate { register, value } => { 
                 let data_len = if register.bits() == 32 { 4 } else { 1 };
                 if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
@@ -135,7 +139,7 @@ impl Program {
 
                 data.push(match register {
                     Register::EAX => 0xA3,
-                    _ => 0x05 + register.offset(),
+                    _ => 0x05 + register.offset() * 8,
                 });
                 data.extend_from_slice(&addr.as_vec(&self, cur_addr));
 
@@ -153,7 +157,7 @@ impl Program {
                 data.push(match register {
                     Register::AL => 0xA0,
                     Register::EAX => 0xA1,
-                    _ => 0x05 + register.offset(),
+                    _ => 0x05 + register.offset() * 8,
                 });
                 data.extend_from_slice(&addr.as_vec(&self, cur_addr));
 
@@ -189,6 +193,13 @@ impl Program {
                 let addr_delta = addr.as_vec(&self, cur_addr);
                 data.extend_from_slice(&addr_delta);
             }
+            Instruction::Add(dest, src) => {
+                // See table 2-2 of intel manual
+                data.push(if dest.bits() == 32 { 0x01 } else { 0x00 });
+                let op = src.offset();
+                let rm = dest.offset();
+                data.push(0b11000000 | (op << 3) | rm);
+            }
             Instruction::AddImmediate { register, value } => {
                 match register {
                     Register::AL | Register::EAX => (),
@@ -201,6 +212,13 @@ impl Program {
                     _ => 0xC0 + register.offset(),
                 });
                 data.extend_from_slice(&value.as_vec(&self, cur_addr));
+            }
+            Instruction::Sub(dest, src) => {
+                // See table 2-2 of intel manual
+                data.push(if dest.bits() == 32 { 0x29 } else { 0x28 });
+                let op = src.offset();
+                let rm = dest.offset();
+                data.push(0b11000000 | (op << 3) | rm);
             }
             Instruction::SubImmediate { register, value } => {
                 match register {
@@ -237,21 +255,21 @@ impl Program {
             }
             Instruction::And(dest, src) => {
                 // See table 2-2 of intel manual
-                data.push(0x21);
+                data.push(if dest.bits() == 32 { 0x21 } else { 0x20 });
                 let op = src.offset();
                 let rm = dest.offset();
                 data.push(0b11000000 | (op << 3) | rm);
             }
             Instruction::Or(dest, src) => {
                 // See table 2-2 of intel manual
-                data.push(0x09);
+                data.push(if dest.bits() == 32 { 0x09 } else { 0x08 });
                 let op = src.offset();
                 let rm = dest.offset();
                 data.push(0b11000000 | (op << 3) | rm);
             }
             Instruction::XOr(dest, src) => {
                 // See table 2-2 of intel manual
-                data.push(0x31);
+                data.push(if dest.bits() == 32 { 0x31 } else { 0x30 });
                 let op = src.offset();
                 let rm = dest.offset();
                 data.push(0b11000000 | (op << 3) | rm);

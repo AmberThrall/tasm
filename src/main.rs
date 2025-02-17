@@ -13,8 +13,8 @@ fn main() {
         }
     };
 
-    //println!("AST:");
-    //ast.print();
+    println!("AST:");
+    ast.print();
 
     // Generate the code
     let program = CodeGenerator::generate(&ast);
