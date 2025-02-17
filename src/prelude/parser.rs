@@ -39,6 +39,7 @@ pub enum Node {
     CMP(Register, Register),
     CMPImm(Register, u32),
     CMPImmPointer(Register, String),
+    BSWAP(Register),
     Register(Register),
     Integer(u32),
     Pointer(String),
@@ -170,6 +171,7 @@ impl<'a> Parser<'a> {
             Some(Token::Or) => self.or_statement(),
             Some(Token::Xor) => self.xor_statement(),
             Some(Token::CMP) => self.cmp_statement(),
+            Some(Token::BSWAP) => self.bswap_statement(),
             _ => self.error("expected a statement."),
         }
     }
@@ -486,6 +488,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // bswap_statement ::= BSWAP required_whitespace register
+    fn bswap_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'bswap'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::BSWAP(r)),
+            None => self.error("invalid argument for 'bswap', expected register."),
+        }
+    }
 
     // whitespace ::= WHITESPACE*
     fn whitespace(&mut self) {

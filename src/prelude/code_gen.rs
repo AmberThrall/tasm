@@ -83,6 +83,7 @@ impl CodeGenerator {
                 _ => panic!("unreachable code"),
             }
             Node::CMPImmPointer(reg, label) => self.push_instr(Instruction::CompareImmediate(*reg, Value::Pointer(label.clone()))),
+            Node::BSWAP(reg) => self.push_instr(Instruction::ByteSwap(*reg)),
             _ => (),
         }
     }

@@ -139,6 +139,8 @@ pub enum Token {
     Xor,
     #[token("cmp")]
     CMP,
+    #[token("bswap")]
+    BSWAP,
 
     // Whitespace
     #[regex(r"(;.*)?[\n\r]")]

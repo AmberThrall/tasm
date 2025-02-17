@@ -7,11 +7,11 @@ _rhs:
     db 0x54, 0x00, 0x00, 0x00
 
 _start:
-    ; Compute _lhs - _rhs and write the result to stdout in base (EBX)
+    ; Compute _lhs - _rhs and write the result to stdout in base 16 (EBX)
     mov eax, [_lhs]
     mov ebx, [_rhs]
     sub eax, ebx
-    mov ebx, 10
+    mov ebx, 16
     mov ecx, 0x09000000
     xor edi, edi
 
