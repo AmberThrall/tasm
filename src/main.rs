@@ -1,11 +1,27 @@
 mod prelude;
 use prelude::*;
+use clap::Parser;
+use std::path::PathBuf;
 use std::fs;
 
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Input file
+    input: PathBuf,
+
+    /// Output file
+    #[arg(short, long, default_value = "a.out")]
+    output: PathBuf,
+}
+
 fn main() {
+    // Handle the arguments
+    let args = Args::parse();
+
     // Load and parse the code.
-    let code: String = fs::read_to_string("tests/hex_dump.s").expect("failed to open file."); 
-    let ast = match Parser::parse(&code) {
+    let code: String = fs::read_to_string(args.input).expect("failed to open file."); 
+    let ast = match prelude::Parser::parse(&code) {
         Ok(node) => node,
         Err(e) => {
             println!("Error on line {}: {}", e.line_no, e.message);
@@ -18,7 +34,7 @@ fn main() {
 
     // Write the ELF binary
     let elf = elf::ELF::new_x86(program);
-    elf.save("a.out").expect("failed to save elf binary.");
+    elf.save(args.output).expect("failed to save elf binary.");
 
     println!("Saved to 'a.out'");
 }
