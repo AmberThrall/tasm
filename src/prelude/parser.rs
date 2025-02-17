@@ -3,79 +3,7 @@ use std::u32;
 use logos::{Logos, Lexer};
 
 use super::lexer::Token;
-use super::{Register, JumpCondition};
-
-#[derive(Debug)]
-pub enum Node {
-    Program(Vec<Node>),
-    Label(String),
-    Entry(String),
-    DS(u32),
-    Db(Vec<u8>),
-    DW(Vec<u16>),
-    DL(Vec<u32>),
-    Int(u8),
-    Inc(Register),
-    Dec(Register),
-    Jump { condition: JumpCondition, label: String },
-    JumpImm { condition: JumpCondition, addr: u32 },
-    Mov(Register, Register),
-    MovImm(Register, u32),
-    MovImmPointer(Register, String),
-    MovMemory(u32, Register),
-    MovMemoryPointer(String, Register),
-    MovMemoryRegister(Register, Register),
-    MovFromMemory(Register, u32),
-    MovFromMemoryPointer(Register, String),
-    MovFromMemoryRegister(Register, Register),
-    Add(Register, Register),
-    AddImm(Register, u32),
-    AddImmPointer(Register, String),
-    Sub(Register, Register),
-    SubImm(Register, u32),
-    SubImmPointer(Register, String),
-    Mul(Register),
-    Div(Register),
-    And(Register, Register),
-    Or(Register, Register),
-    XOr(Register, Register),
-    CMP(Register, Register),
-    CMPImm(Register, u32),
-    CMPImmPointer(Register, String),
-    BSWAP(Register),
-    Push(Register),
-    Pop(Register),
-    Call(u32),
-    CallPointer(String),
-    CallRegister(Register),
-    Return,
-    Not(Register),
-    Neg(Register),
-    SHL(Register),
-    SHR(Register),
-    Register(Register),
-    Integer(u32),
-    Pointer(String),
-    Newline
-}
-
-impl Node {
-    pub fn print(&self) {
-        self.print_impl(0);
-    }
-
-    fn print_impl(&self, depth: usize) {
-        for _ in 0..depth { print!("   "); }
-        match self {
-            Node::Program(stmts) => {
-                println!("Program");
-                for n in stmts { n.print_impl(depth + 1); }
-            }
-            Node::Label(ident) => println!("Label({})", ident),
-            _ => println!("{:?}", self),
-        }
-    }
-}
+use super::{Register, JumpCondition, Node};
 
 #[derive(Debug, Clone)]
 pub struct Error {
@@ -196,7 +124,8 @@ impl<'a> Parser<'a> {
             Some(Token::Neg) => self.neg_statement(),
             Some(Token::SHL) => self.shl_statement(),
             Some(Token::SHR) => self.shr_statement(),
-            _ => self.error("expected a statement."),
+            Some(Token::EQU) => self.equ_statement(),
+            _ => self.error(&format!("unexpected token '{:?}'.", token)),
         }
     }
 
@@ -823,7 +752,7 @@ impl<'a> Parser<'a> {
             Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
                 Ok(x) => Ok((a.unwrap(), Node::Integer(x))),
                 Err(e) => Err(e),
-            }
+            } 
             _ => match self.register() {
                 Some(reg) => Ok((a.unwrap(), Node::Register(reg))), 
                 None => Err("unknown register".to_string()),
@@ -838,6 +767,92 @@ impl<'a> Parser<'a> {
         match token {
             Some(Token::Newline) | None => { self.line_no += 1; self.march(); Ok(Node::Newline) }
             _ => self.error("expected new line."),
+        }
+    }
+
+    // equ_statement ::= EQU required_whitespace IDENTIFIER required_whitespace expr
+    fn equ_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'EQU'."); }
+
+        let mut ident = String::new();
+        if let Some(Token::Identifier(x)) = self.march() {
+            ident = x;
+        } else { 
+            return self.error("expected variable name after 'EQU'.");
+        }
+
+        if !self.required_whitespace() { return self.error("missing definition in EQU."); }
+
+        let expr = self.expr();
+        match expr {
+            Ok(_) => (),
+            Err(e) => return self.error(&e),
+        }
+
+        Ok(Node::EQU(ident, Box::new(expr.unwrap())))
+    }
+    
+    // expr ::= expr_term whitespace (operator whitespace expr_term whitespace)*
+    fn expr(&mut self) -> Result<Node, String> {
+        let first = self.expr_term();
+        match first {
+            Ok(_) => (),
+            Err(e) => return Err(format!("invalid expression: {}", e)),
+        }
+        self.whitespace();
+
+        let mut parts = vec![first.unwrap()];
+
+        // While the next token is an operator...
+        while let Some(op) = self.operator() {
+            self.march();
+            self.whitespace();
+            let next = self.expr_term();
+            match next {
+                Ok(_) => (),
+                Err(e) => return Err(format!("invalid expression after {:?}: {}", op, e)),
+            }
+            parts.push(Node::Operator(op));
+            parts.push(next.unwrap());
+            self.whitespace();
+        }
+
+        Ok(Node::Expr(parts))
+    }
+
+    // expr_term ::= $ | IDENTIFIER | integer | paren_expr
+    fn expr_term(&mut self) -> Result<Node, String> {
+        match self.peek() {
+            Some(Token::Dollar) =>{ self.march(); Ok(Node::Dollar) },
+            Some(Token::LeftParen) => self.paren_expr(),
+            Some(Token::Identifier(x)) => { self.march(); Ok(Node::Pointer(x)) }
+            _ => match self.integer() {
+                Ok(x) => Ok(Node::Integer(x)),
+                Err(e) => Err(e), 
+            }
+        }
+    }
+
+    // paren_expr ::= ( whitespace expr whitespace )
+    fn paren_expr(&mut self) -> Result<Node, String> {
+        self.march();
+        self.whitespace();
+        let expr = self.expr()?;
+        self.whitespace();
+        if self.march() != Some(Token::RightParen) {
+            Err("expected ')' in expression.".to_string())
+        } else {
+            Ok(Node::ParenExpr(Box::new(expr)))
+        }
+    }
+    
+    // operator ::= + | - | * | /
+    fn operator(&mut self) -> Option<Token> {
+        let token = self.peek();
+        match token {
+            Some(Token::Plus) | Some(Token::Minus) | Some(Token::Multiply) | Some(Token::Divide) => Some(token.clone().unwrap()),
+            _ => None,
         }
     }
 }

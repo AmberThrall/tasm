@@ -25,16 +25,17 @@ ENTRY _start
 
 _msg: 
     DB "Hello World!",0xA
+    EQU msg_len $ - _msg
 
 _start:
-    mov eax, 4      ; write
-    mov ebx, 1      ; stdout
-    mov ecx, _msg   ; what to print
-    mov edx, 13     ; message length
+    mov eax, 4        ; write
+    mov ebx, 1        ; stdout
+    mov ecx, _msg     ; address
+    mov edx, msg_len  ; count  
     int 0x80
 
-    mov eax, 1      ; exit
-    mov ebx, 0      ; status code 0
+    mov eax, 1        ; exit
+    mov ebx, 0        ; status code 0
     int 0x80
 ```
 

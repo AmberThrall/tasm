@@ -11,6 +11,20 @@ pub enum Token {
     RightBracket,
     #[token(":")]
     Colon,
+    #[token("+")]
+    Plus,
+    #[token("-")]
+    Minus,
+    #[token("*")]
+    Multiply,
+    #[token("/")]
+    Divide,
+    #[token("(")]
+    LeftParen,
+    #[token(")")]
+    RightParen,
+    #[token("$")]
+    Dollar,
 
     // Pseudo-instructions
     #[token("ENTRY")]
@@ -23,6 +37,8 @@ pub enum Token {
     DW,
     #[token("DL")]
     DLPseudo,
+    #[token("EQU")]
+    EQU,
 
     // Instructions
     #[token("mov")]
