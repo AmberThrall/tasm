@@ -15,7 +15,6 @@ _loop:
     dec di 
     jnz _loop
 
-_exit:
     mov eax, 1      ; exit
     mov ebx, 0      ; status code 0
     int 0x80
