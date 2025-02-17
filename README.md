@@ -27,10 +27,10 @@ _msg:
     db "Hello World!",0xA
 
 _start:
+    mov eax, 4      ; write
     mov ebx, 1      ; stdout
     mov ecx, _msg   ; what to print
     mov edx, 13     ; message length
-    mov eax, 4      ; write
     int 0x80
 
     mov eax, 1      ; exit
