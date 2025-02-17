@@ -88,6 +88,8 @@ impl CodeGenerator {
             }
             Node::CMPImmPointer(reg, label) => self.push_instr(Instruction::CompareImmediate(*reg, Value::Pointer(label.clone()))),
             Node::BSWAP(reg) => self.push_instr(Instruction::ByteSwap(*reg)),
+            Node::Push(reg) => self.push_instr(Instruction::Push(*reg)),
+            Node::Pop(reg) => self.push_instr(Instruction::Pop(*reg)),
             _ => (),
         }
     }

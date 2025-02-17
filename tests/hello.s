@@ -3,6 +3,11 @@ entry _start
 _msg: 
     db "Hello World!",0xA
 
+_print:
+    mov eax, 4
+    int 0x80
+    ret
+
 _start:
     mov ebx, 1      ; stdout
     mov ecx, _msg
@@ -11,9 +16,7 @@ _start:
     mov di, 5      ; print it 5 times
 
 _loop:
-    mov eax, 4  ; write
-    int 0x80
-
+    call _print
     dec di 
     jnz _loop
 
