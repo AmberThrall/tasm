@@ -1,10 +1,13 @@
 ENTRY _start
 
 _lhs:
-    DB 0x6C, 0x00, 0x00, 0x00
+    DL 0x6C
 
 _rhs:
-    DB 0x54, 0x00, 0x00, 0x00
+    DL 0x54
+
+_buffer:
+    DS 255
 
 _start:
     ; Compute _lhs - _rhs and write the result to stdout in base 16 (EBX)
@@ -12,7 +15,7 @@ _start:
     mov ebx, [_rhs]
     sub eax, ebx
     mov ebx, 16
-    mov ecx, 0x09000000
+    mov ecx, _buffer
     xor edi, edi
 
 _loop:

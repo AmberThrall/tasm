@@ -15,8 +15,14 @@ pub enum Token {
     // Pseudo-instructions
     #[token("ENTRY")]
     Entry,
+    #[token("DS")]
+    DS,
     #[token("DB")]
     Db,
+    #[token("DW")]
+    DW,
+    #[token("DL")]
+    DLPseudo,
 
     // Instructions
     #[token("mov")]

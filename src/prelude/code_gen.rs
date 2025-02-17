@@ -38,7 +38,22 @@ impl CodeGenerator {
                 self.current_block += 1;
             } 
             Node::Entry(label) => self.entry_point = label.clone(),
+            Node::DS(len) => self.push_instr(Instruction::RawData(vec![0; *len as usize])),
             Node::Db(data) => self.push_instr(Instruction::RawData(data.to_vec())),
+            Node::DW(data) => {
+                let mut new_data = Vec::new();
+                for word in data {
+                    new_data.extend_from_slice(&utils::dump_word(*word, Endianness::Little));
+                }
+                self.push_instr(Instruction::RawData(new_data));
+            }
+            Node::DL(data) => {
+                let mut new_data = Vec::new();
+                for word in data {
+                    new_data.extend_from_slice(&utils::dump_dword(*word, Endianness::Little));
+                }
+                self.push_instr(Instruction::RawData(new_data));
+            }
             Node::Int(x) => self.push_instr(Instruction::Int(*x)),
             Node::Inc(reg) => self.push_instr(Instruction::Inc(*reg)),
             Node::Dec(reg) => self.push_instr(Instruction::Dec(*reg)),

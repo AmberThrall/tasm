@@ -10,7 +10,10 @@ pub enum Node {
     Program(Vec<Node>),
     Label(String),
     Entry(String),
+    DS(u32),
     Db(Vec<u8>),
+    DW(Vec<u16>),
+    DL(Vec<u32>),
     Int(u8),
     Inc(Register),
     Dec(Register),
@@ -151,7 +154,10 @@ impl<'a> Parser<'a> {
                 Err(_) => self.error(&format!("unknown instruction '{}'.", ident)),
             },
             Some(Token::Entry) => self.entry_statement(),
+            Some(Token::DS) => self.ds_statement(),
             Some(Token::Db) => self.db_statement(),
+            Some(Token::DW) => self.dw_statement(),
+            Some(Token::DLPseudo) => self.dl_statement(),
             Some(Token::Int) => self.int_statement(),
             Some(Token::Inc) => self.inc_statement(),
             Some(Token::Dec) => self.dec_statement(),
@@ -219,7 +225,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // db_statement ::= DB required_whitespace db_statment (COMMA whitespace db_statement)*
+    // ds_statement ::= DS required_whitespace integer
+    fn ds_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'ds'."); }
+
+        match self.integer() {
+            Ok(x) => Ok(Node::DS(x)),
+            Err(e) => self.error(&format!("invalid argument passed to ds ({}).", e)),
+        }
+    }
+
+    // db_statement ::= DB required_whitespace db_argument (COMMA whitespace db_argument)*
     fn db_statement(&mut self) -> Result<Node, Error> {
         self.march();
         if !self.required_whitespace() { return self.error("expected whitespace after 'db'."); }
@@ -242,7 +259,7 @@ impl<'a> Parser<'a> {
         Ok(Node::Db(data))
     }
 
-    // db_argument ::= number | byte 
+    // db_argument ::= string | byte 
     fn db_argument(&mut self) -> Result<Vec<u8>, String> {
         match self.peek() {
             Some(Token::String(s)) => { self.march(); Ok(s.as_bytes().to_vec()) },
@@ -251,6 +268,76 @@ impl<'a> Parser<'a> {
                 Err(e) => Err(format!("invalid argument passed to 'db' ({})", e))
             }
             _ => Err("invalid argument passed to 'db'.".to_string()),
+        }
+    }
+
+    // dw_statement ::= DW required_whitespace dw_argument (COMMA whitespace dw_argument)*
+    fn dw_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'dw'."); }
+        let mut data = Vec::new();
+
+        match self.dw_argument() {
+            Ok(bytes) => data.extend_from_slice(&bytes),
+            Err(msg) => return self.error(&msg),
+        }
+
+        while self.peek() == Some(Token::Comma) {
+            self.march();
+            self.whitespace();
+            match self.dw_argument() {
+                Ok(bytes) => data.extend_from_slice(&bytes),
+                Err(msg) => return self.error(&msg),
+            }
+        }
+
+        Ok(Node::DW(data))
+    }
+
+    // dw_argument ::= string | word 
+    fn dw_argument(&mut self) -> Result<Vec<u16>, String> {
+        match self.peek() {
+            Some(Token::String(s)) => { self.march(); Ok(s.as_bytes().to_vec().iter().map(|x| *x as u16).collect()) },
+            Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.word() {
+                Ok(x) => Ok(vec![x]),
+                Err(e) => Err(format!("invalid argument passed to 'dw' ({})", e))
+            }
+            _ => Err("invalid argument passed to 'dw'.".to_string()),
+        }
+    }
+
+    // dl_statement ::= DL required_whitespace dl_argument (COMMA whitespace dl_argument)*
+    fn dl_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'dl'."); }
+        let mut data = Vec::new();
+
+        match self.dl_argument() {
+            Ok(bytes) => data.extend_from_slice(&bytes),
+            Err(msg) => return self.error(&msg),
+        }
+
+        while self.peek() == Some(Token::Comma) {
+            self.march();
+            self.whitespace();
+            match self.dl_argument() {
+                Ok(bytes) => data.extend_from_slice(&bytes),
+                Err(msg) => return self.error(&msg),
+            }
+        }
+
+        Ok(Node::DL(data))
+    }
+
+    // dl_argument ::= string | word 
+    fn dl_argument(&mut self) -> Result<Vec<u32>, String> {
+        match self.peek() {
+            Some(Token::String(s)) => { self.march(); Ok(s.as_bytes().to_vec().iter().map(|x| *x as u32).collect()) },
+            Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
+                Ok(x) => Ok(vec![x]),
+                Err(e) => Err(format!("invalid argument passed to 'dw' ({})", e))
+            }
+            _ => Err("invalid argument passed to 'dw'.".to_string()),
         }
     }
 
@@ -660,6 +747,20 @@ impl<'a> Parser<'a> {
             Some(Token::HexNumber(x)) => if (x as u64) > 0xFF { 
                 Err(format!("{} > 255", x as u64))     
             } else { Ok(x as u8) }
+            _ => Err("not a number".to_string()),
+        }
+    }
+
+    // word ::= NUMBER | HEXNUMBER
+    //      checks that its between 0 and 0xFFFF
+    fn word(&mut self) -> Result<u16, String> {
+        match self.march() {
+            Some(Token::Number(x)) => if (x as u64) > 0xFFFF { 
+                Err(format!("{} > 0xFFFF", x as u64))     
+            } else { Ok(x as u16) }
+            Some(Token::HexNumber(x)) => if (x as u64) > 0xFFFF { 
+                Err(format!("{} > 0xFFFF", x as u64))     
+            } else { Ok(x as u16) }
             _ => Err("not a number".to_string()),
         }
     }
