@@ -3,6 +3,7 @@ use prelude::*;
 use clap::Parser;
 use std::path::PathBuf;
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -34,7 +35,8 @@ fn main() {
 
     // Write the ELF binary
     let elf = elf::ELF::new_x86(program);
-    elf.save(args.output).expect("failed to save elf binary.");
+    elf.save(args.output.clone()).expect("failed to save elf binary.");
 
-    println!("Saved to 'a.out'");
+    // Set the permissions
+    fs::set_permissions(args.output, fs::Permissions::from_mode(0o755)).expect("failed to set permissions.");
 }
