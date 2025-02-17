@@ -26,7 +26,7 @@ fn main() {
         Ok(node) => node,
         Err(e) => {
             println!("Error on line {}: {}", e.line_no, e.message);
-            return;
+            std::process::exit(1);
         }
     };
 
