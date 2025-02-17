@@ -12,40 +12,6 @@ pub enum Token {
     #[token(":")]
     Colon,
 
-    // Registers
-    #[token("ah")] 
-    AH,
-    #[token("al")]
-    AL, 
-    #[token("bh")]
-    BH, 
-    #[token("bl")] 
-    BL, 
-    #[token("ch")]
-    CH, 
-    #[token("cl")]
-    CL, 
-    #[token("dh")]
-    DH, 
-    #[token("dl")]
-    DL,
-    #[token("eax")]
-    EAX,
-    #[token("ebx")]
-    EBX,
-    #[token("ecx")]
-    ECX,
-    #[token("esp")]
-    ESP,
-    #[token("ebp")]
-    EBP,
-    #[token("edi")]
-    EDI,
-    #[token("esi")]
-    ESI,
-    #[token("edx")]
-    EDX,
-
     // Pseudo-instructions
     #[token("entry")]
     Entry,
@@ -141,6 +107,58 @@ pub enum Token {
     CMP,
     #[token("bswap")]
     BSWAP,
+
+    // Registers
+    #[token("ah")] 
+    AH,
+    #[token("al")]
+    AL, 
+    #[token("bh")]
+    BH, 
+    #[token("bl")] 
+    BL, 
+    #[token("ch")]
+    CH, 
+    #[token("cl")]
+    CL, 
+    #[token("dh")]
+    DH, 
+    #[token("dl")]
+    DL,
+    #[token("ax")]
+    AX,
+    #[token("cx")]
+    CX,
+    #[token("dx")]
+    DX,
+    #[token("bx")]
+    BX,
+    #[token("sp")]
+    SP,
+    #[token("bp")]
+    BP,
+    #[token("si")]
+    SI,
+    #[token("di")]
+    DI,
+    #[token("eax")]
+    EAX,
+    #[token("ebx")]
+    EBX,
+    #[token("ecx")]
+    ECX,
+    #[token("esp")]
+    ESP,
+    #[token("ebp")]
+    EBP,
+    #[token("edi")]
+    EDI,
+    #[token("esi")]
+    ESI,
+    #[token("edx")]
+    EDX,
+
+
 
     // Whitespace
     #[regex(r"(;.*)?[\n\r]")]

@@ -47,6 +47,7 @@ impl CodeGenerator {
             Node::Mov(reg1, reg2) => self.push_instr(Instruction::Mov(*reg1, *reg2)),
             Node::MovImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                16 => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UShort(*x as u16) }),
                 32 => self.push_instr(Instruction::MovImmediate { register: *reg, value: Value::UInt(*x) }),
                 _ => panic!("unreachable code"),
             }
@@ -60,6 +61,7 @@ impl CodeGenerator {
             Node::Add(dest, src) => self.push_instr(Instruction::Add(*dest, *src)),
             Node::AddImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                16 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UShort(*x as u16) }),
                 32 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UInt(*x) }),
                 _ => panic!("unreachable code"),
             }
@@ -67,6 +69,7 @@ impl CodeGenerator {
             Node::Sub(dest, src) => self.push_instr(Instruction::Sub(*dest, *src)),
             Node::SubImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UByte(*x as u8) }),
+                16 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UShort(*x as u16) }),
                 32 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UInt(*x) }),
                 _ => panic!("unreachable code"),
             }
@@ -79,6 +82,7 @@ impl CodeGenerator {
             Node::CMP(a, b) => self.push_instr(Instruction::Compare(*a, *b)),
             Node::CMPImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::CompareImmediate(*reg, Value::UByte(*x as u8))),
+                16 => self.push_instr(Instruction::CompareImmediate(*reg, Value::UShort(*x as u16))),
                 32 => self.push_instr(Instruction::CompareImmediate(*reg, Value::UInt(*x))),
                 _ => panic!("unreachable code"),
             }

@@ -23,6 +23,7 @@ pub enum Endianness {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Register {
     AH, AL, BH, BL, CH, CL,  DH, DL,
+    AX, CX, DX, BX, SP, BP, SI, DI,
     EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI,
 }
 
@@ -31,20 +32,22 @@ impl Register {
         use Register::*;
         match &self {
             AL | CL | DL | BL | AH | CH | DH | BH => 8,
+            AX | CX | DX | BX | SP | BP | SI | DI => 16,
             EAX | ECX | EDX | EBX | ESP | EBP | ESI | EDI => 32,
         }
     }
 
     pub fn offset(&self) -> u8 {
+        use Register::*;
         match self {
-            Register::AL | Register::EAX => 0,
-            Register::CL | Register::ECX => 1,
-            Register::DL | Register::EDX => 2,
-            Register::BL | Register::EBX => 3,
-            Register::AH | Register::ESP => 4,
-            Register::CH | Register::EBP => 5,
-            Register::DH | Register::ESI => 6,
-            Register::BH | Register::EDI => 7,
+            AL | AX | EAX => 0,
+            CL | CX | ECX => 1,
+            DL | DX | EDX => 2,
+            BL | BX | EBX => 3,
+            AH | SP | ESP => 4,
+            CH | BP | EBP => 5,
+            DH | SI | ESI => 6,
+            BH | DI | EDI => 7,
         }
     }
 }
