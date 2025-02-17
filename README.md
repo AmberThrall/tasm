@@ -1,6 +1,6 @@
 # TASM 
 
-**TASM** is a tiny x86 assembler for Linux targeting System V.
+TASM is a tiny x86 assembler for Linux targeting System V.
 
 # Installing
 
