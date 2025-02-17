@@ -10,7 +10,7 @@ _start:
 
 _loop:
     xor edx, edx
-    db 0xF7, 0xF3                       ; div ebx
+    div ebx
     db 0x80, 0xFA, 0x09                 ; cmp dl, 9
     jle _skip_a
     add dl, 0x07

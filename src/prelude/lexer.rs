@@ -127,6 +127,10 @@ pub enum Token {
     Add,
     #[token("sub")]
     Sub,
+    #[token("mul")]
+    Mul,
+    #[token("div")]
+    Div,
     #[token("and")]
     And,
     #[token("or")]

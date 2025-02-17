@@ -65,6 +65,8 @@ impl CodeGenerator {
                 32 => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::UInt(*x) }),
                 _ => panic!("unreachable code"),
             }
+            Node::Mul(reg) => self.push_instr(Instruction::Multiply(*reg)),
+            Node::Div(reg) => self.push_instr(Instruction::Divide(*reg)),
             Node::SubImmPointer(reg, label) => self.push_instr(Instruction::SubImmediate { register: *reg, value: Value::Pointer(label.clone()) }),
             Node::And(a, b) => self.push_instr(Instruction::And(*a, *b)),
             Node::Or(a, b) => self.push_instr(Instruction::Or(*a, *b)),

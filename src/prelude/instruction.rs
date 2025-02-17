@@ -36,6 +36,8 @@ pub enum Instruction {
     Jump { condition: JumpCondition, addr: Value },
     AddImmediate { register: Register, value: Value },
     SubImmediate { register: Register, value: Value },
+    Multiply(Register),
+    Divide(Register),
     ByteSwap(Register),
     And(Register, Register),
     Or(Register, Register),
@@ -63,6 +65,8 @@ impl Instruction {
                 let data_len = if register.bits() == 32 { 4 } else { 1 };
                 if *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
             },
+            Self::Multiply(_) => 2,
+            Self::Divide(_) => 2,
             Self::ByteSwap(_) => 2, 
             Self::And(_, _) => 2,
             Self::Or(_, _) => 2,
@@ -169,6 +173,22 @@ impl Program {
                     _ => 0xE8 + register.offset(),
                 });
                 data.extend_from_slice(&value.as_vec(&self, cur_addr));
+            }
+            Instruction::Multiply(register) => {
+                data.push(match register.bits() {
+                    8 => 0xF6,
+                    32 => 0xF7,
+                    _ => panic!("unknown error."),
+                });
+                data.push(0xE0 + register.offset());
+            }
+            Instruction::Divide(register) => {
+                data.push(match register.bits() {
+                    8 => 0xF6,
+                    32 => 0xF7,
+                    _ => panic!("unknown error."),
+                });
+                data.push(0xF0 + register.offset());
             }
             Instruction::ByteSwap(register)  => {
                 data.push(0x0f);

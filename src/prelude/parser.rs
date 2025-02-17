@@ -26,6 +26,8 @@ pub enum Node {
     AddImmPointer(Register, String),
     SubImm(Register, u32),
     SubImmPointer(Register, String),
+    Mul(Register),
+    Div(Register),
     And(Register, Register),
     Or(Register, Register),
     XOr(Register, Register),
@@ -154,6 +156,8 @@ impl<'a> Parser<'a> {
             Some(Token::Mov) => self.mov_statement(),
             Some(Token::Add) => self.add_statement(),
             Some(Token::Sub) => self.sub_statement(),
+            Some(Token::Mul) => self.mul_statement(),
+            Some(Token::Div) => self.div_statement(),
             Some(Token::And) => self.and_statement(),
             Some(Token::Or) => self.or_statement(),
             Some(Token::Xor) => self.xor_statement(),
@@ -347,6 +351,28 @@ impl<'a> Parser<'a> {
                 _ => self.error("invalid arguments to sub (unknown error)."),
             }
             Err(e) => self.error(&format!("invalid arguments to sub ({}).", e)),
+        }
+    }
+
+    // mul_statement ::= MUL req_ws register
+    fn mul_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'mul'."); }
+
+        match self.register() {
+            Some(reg) => Ok(Node::Mul(reg)),
+            None => self.error("invalid argument to mul (unknown register)."),
+        }
+    }
+
+    // div_statement ::= DIV req_ws register
+    fn div_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'div'."); }
+
+        match self.register() {
+            Some(reg) => Ok(Node::Div(reg)),
+            None => self.error("invalid argument to div (unknown register)."),
         }
     }
 
