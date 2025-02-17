@@ -111,6 +111,10 @@ pub enum Token {
     Push,
     #[token("pop")]
     Pop,
+    #[token("call")]
+    Call,
+    #[token("ret")]
+    Ret,
 
     // Registers
     #[token("ah")] 

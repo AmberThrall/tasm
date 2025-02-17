@@ -42,6 +42,10 @@ pub enum Node {
     BSWAP(Register),
     Push(Register),
     Pop(Register),
+    Call(u32),
+    CallPointer(String),
+    CallRegister(Register),
+    Return,
     Register(Register),
     Integer(u32),
     Pointer(String),
@@ -176,6 +180,8 @@ impl<'a> Parser<'a> {
             Some(Token::BSWAP) => self.bswap_statement(),
             Some(Token::Push) => self.push_statement(),
             Some(Token::Pop) => self.pop_statement(),
+            Some(Token::Call) => self.call_statement(),
+            Some(Token::Ret) => { self.march(); Ok(Node::Return) },
             _ => self.error("expected a statement."),
         }
     }
@@ -522,6 +528,24 @@ impl<'a> Parser<'a> {
         match self.register() {
             Some(r) => Ok(Node::Pop(r)),
             None => self.error("invalid argument for 'pop', expected register."),
+        }
+    }
+
+    // call_statement ::= POP required_whitespace (identifier | integer | register)
+    fn call_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'call'."); }
+ 
+        match self.peek() {
+            Some(Token::Identifier(label)) => { self.march(); Ok(Node::CallPointer(label)) },
+            Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
+                Ok(x) => Ok(Node::Call(x as u32)),
+                Err(e) => self.error(&format!("invalid argument to call ({}).", e)),
+            }
+            _ => match self.register() {
+                Some(register) => Ok(Node::CallRegister(register)),
+                _ => self.error("invalid argument to call."),
+            }
         }
     }
 

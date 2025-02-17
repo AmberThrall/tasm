@@ -90,6 +90,10 @@ impl CodeGenerator {
             Node::BSWAP(reg) => self.push_instr(Instruction::ByteSwap(*reg)),
             Node::Push(reg) => self.push_instr(Instruction::Push(*reg)),
             Node::Pop(reg) => self.push_instr(Instruction::Pop(*reg)),
+            Node::Call(addr) => self.push_instr(Instruction::Call(Value::UInt(*addr))),
+            Node::CallPointer(label) => self.push_instr(Instruction::Call(Value::RelPointer(label.clone()))),
+            Node::CallRegister(register) => self.push_instr(Instruction::CallRegister(*register)),
+            Node::Return => self.push_instr(Instruction::Return),
             _ => (),
         }
     }

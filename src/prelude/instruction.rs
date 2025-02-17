@@ -50,6 +50,9 @@ pub enum Instruction {
     CompareImmediate(Register, Value),
     Push(Register),
     Pop(Register),
+    Call(Value),
+    CallRegister(Register),
+    Return,
 }
 
 impl Instruction {
@@ -106,6 +109,9 @@ impl Instruction {
             },
             Self::Push(r) => if r.bits() == 16 { 2 } else { 1 },
             Self::Pop(r) => if r.bits() == 16 { 2 } else { 1 },
+            Self::Call(_) => 5,
+            Self::CallRegister(r) => if r.bits() == 16 { 2 } else { 1 },
+            Self::Return => 1,
         }
     }
 }
@@ -341,6 +347,16 @@ impl Program {
                 if register.bits() == 16 { data.push(0x66); }
                 data.push(0x58 + register.offset());
             }
+            Instruction::Call(value) => {
+                data.push(0xE8);
+                data.extend_from_slice(&value.as_vec(&self, cur_addr));
+            }
+            Instruction::CallRegister(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(0xFF);
+                data.push(0xD0 + register.offset());
+            }
+            Instruction::Return => data.push(0xC3),
         }
 
         data
