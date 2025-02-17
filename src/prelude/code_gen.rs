@@ -54,6 +54,9 @@ impl CodeGenerator {
             Node::MovMemory(addr, reg) => self.push_instr(Instruction::MovMemory { addr: Value::UInt(*addr), register: *reg }),
             Node::MovMemoryPointer(label, reg) => self.push_instr(Instruction::MovMemory { addr: Value::Pointer(label.clone()), register: *reg }),
             Node::MovMemoryRegister(dest, reg) => self.push_instr(Instruction::MovMemoryReg { dest: *dest, src: *reg  }),
+            Node::MovFromMemory(register, addr) => self.push_instr(Instruction::MovFromMemory(*register, Value::UInt(*addr))),
+            Node::MovFromMemoryPointer(register, label) => self.push_instr(Instruction::MovFromMemory(*register, Value::Pointer(label.clone()))),
+            Node::MovFromMemoryRegister(dest, src) => self.push_instr(Instruction::MovFromMemoryReg(*dest, *src)),
             Node::AddImm(reg, x) => match reg.bits() {
                 8 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UByte(*x as u8) }),
                 32 => self.push_instr(Instruction::AddImmediate { register: *reg, value: Value::UInt(*x) }),

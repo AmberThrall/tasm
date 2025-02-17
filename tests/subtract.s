@@ -1,8 +1,11 @@
 entry _start
 
+_lhs:
+    db 0x6C, 0x00, 0x00, 0x00
+
 _start:
-    ; Compute 0x6C - 0x54 and write the result to stdout in base (EBX)
-    mov eax, 0x6c
+    ; Compute _lhs - 0x54 and write the result to stdout in base (EBX)
+    mov eax, [_lhs]
     sub eax, 0x54
     mov ebx, 10
     mov ecx, 0x09000000

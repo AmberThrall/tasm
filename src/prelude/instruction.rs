@@ -31,6 +31,8 @@ pub enum Instruction {
     MovImmediate { register: Register, value: Value },
     MovMemoryReg { dest: Register, src: Register },
     MovMemory { addr: Value, register: Register },
+    MovFromMemory(Register, Value),
+    MovFromMemoryReg(Register, Register),
     Inc(Register),
     Dec(Register),
     Jump { condition: JumpCondition, addr: Value },
@@ -56,6 +58,13 @@ impl Instruction {
             Self::MovImmediate { register, value } => if register.bits() == 32 { 5 } else { 2 },
             Self::MovMemoryReg { dest, src } => if *dest == Register::ESP || *dest == Register::EBP { 3 } else { 2 },
             Self::MovMemory { addr, register } => { if *register == Register::EAX { 6 } else { 7 } },
+            Self::MovFromMemory(register, addr) => {
+                match *register {
+                    Register::AL | Register::EAX => 5,
+                    _ => 6,
+                }
+            }
+            Self::MovFromMemoryReg(_, _) => 2,
             Self::Inc(_) => 1, 
             Self::Dec(_) => 1, 
             Self::Jump { condition, addr } => { if *condition == JumpCondition::None { 5 } else { 6 } },
@@ -126,17 +135,42 @@ impl Program {
 
                 data.push(match register {
                     Register::EAX => 0xA3,
-                    Register::ECX => 0x0D,
-                    Register::EDX => 0x15,
-                    Register::EBX => 0x1D,
-                    Register::ESP => 0x25,
-                    Register::EBP => 0x2D,
-                    Register::ESI => 0x35,
-                    Register::EDI => 0x3D,
-                    _ => panic!("unsupported register."),
+                    _ => 0x05 + register.offset(),
                 });
                 data.extend_from_slice(&addr.as_vec(&self, cur_addr));
 
+            }
+            Instruction::MovFromMemory(register, addr) => {
+                match *register {
+                    Register::AL | Register::EAX => (),
+                    _ => match register.bits() {
+                        8 => data.push(0x8A),
+                        32 => data.push(0x8B),
+                        _ => panic!("unreachable code"),
+                    }
+                }
+
+                data.push(match register {
+                    Register::AL => 0xA0,
+                    Register::EAX => 0xA1,
+                    _ => 0x05 + register.offset(),
+                });
+                data.extend_from_slice(&addr.as_vec(&self, cur_addr));
+
+            }
+            Instruction::MovFromMemoryReg(dest, src) => {
+                // See Table 2-2
+                data.push(if dest.bits() == 8 { 0x8A } else { 0x8B });
+
+                let op = dest.offset();
+                let rm = src.offset();
+                match dest {
+                    Register::ESP => { data.push((op << 3) | rm); data.push(0x24); }
+                    Register::EBP => { data.push(0b01000000 | (op << 3) | rm); data.push(0x00); }
+                    Register::EAX | Register::ECX | Register::EDX | Register::EBX | Register::ESI 
+                        | Register::EDI => data.push((op << 3) | rm),
+                    _ => panic!("unsupported register."),
+                }
             }
             Instruction::Inc(register) => {
                 data.push(0x40 + register.offset());

@@ -22,6 +22,9 @@ pub enum Node {
     MovMemory(u32, Register),
     MovMemoryPointer(String, Register),
     MovMemoryRegister(Register, Register),
+    MovFromMemory(Register, u32),
+    MovFromMemoryPointer(Register, String),
+    MovFromMemoryRegister(Register, Register),
     AddImm(Register, u32),
     AddImmPointer(Register, String),
     SubImm(Register, u32),
@@ -277,7 +280,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // mov_statement ::= MOV required_whitespace reg_imm_or_reg_reg
+    // mov_statement ::= MOV req_ws register ws , ws (register | pointer | integer)
+    //              | MOV req_ws register ws , ws [ ws (register | pointer | integer) ws ]
     //              | MOV requied_whitespace [ ws (register | pointer | integer) ws ] ws , ws register
     fn mov_statement(&mut self) -> Result<Node, Error> {
         self.march();
@@ -315,15 +319,64 @@ impl<'a> Parser<'a> {
                     _ => self.error("unknown error occured."),
                 }
             }
-            // It's not a memory write
-            _ => match self.reg_imm_or_reg_reg() {
-                Ok((reg, n)) => match n {
-                    Node::Register(reg2) => Ok(Node::Mov(reg, reg2)),
-                    Node::Pointer(label) => Ok(Node::MovImmPointer(reg, label)),
-                    Node::Integer(x) => Ok(Node::MovImm(reg, x)),
-                    _ => self.error("invalid arguments to mov (unknown error)."),
+
+            // Not a memory write should be register next
+            _ => match self.register() {
+                Some(register) => {
+                    self.whitespace();
+                    if self.march() != Some(Token::Comma) { return self.error("expected ','"); }
+                    self.whitespace();
+
+                    match self.peek() {
+                       Some(Token::LeftBracket) => {
+                           self.march();
+                           self.whitespace();
+                           let n = match self.peek() {
+                                Some(Token::Identifier(x)) => { self.march(); Ok(Node::Pointer(x)) },
+                                Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
+                                    Ok(x) => Ok(Node::Integer(x)),
+                                    Err(e) => self.error(&format!("invalid memory address in mov ({})", e)),
+                                }
+                                _ => match self.register() {
+                                    Some(x) => Ok(Node::Register(x)),
+                                    None => self.error(&format!("invalid memory address in mov (unknown register)")),
+                                }
+                           }?;
+
+                           self.whitespace();
+                           if self.march() != Some(Token::RightBracket) { return self.error("expected ']'"); }
+
+                           match n {
+                                Node::Integer(x) => Ok(Node::MovFromMemory(register, x)),
+                                Node::Pointer(x) => Ok(Node::MovFromMemoryPointer(register, x)),
+                                Node::Register(x) => Ok(Node::MovFromMemoryRegister(register, x)),
+                               _ => self.error("unknown error occured."),
+                           }
+                       }
+
+                       // Not reading from memory
+                       _ => {
+                           let n = match self.peek() {
+                                Some(Token::Identifier(x)) => { self.march(); Ok(Node::Pointer(x)) },
+                                Some(Token::Number(_)) | Some(Token::HexNumber(_)) => match self.integer() {
+                                    Ok(x) => Ok(Node::Integer(x)),
+                                    Err(e) => self.error(&format!("invalid memory address in mov ({})", e)),
+                                }
+                                _ => match self.register() {
+                                    Some(x) => Ok(Node::Register(x)),
+                                    None => self.error(&format!("invalid memory address in mov (unknown register)")),
+                                }
+                           }?;
+                           match n {
+                               Node::Integer(x) => Ok(Node::MovImm(register, x)),
+                               Node::Pointer(x) => Ok(Node::MovImmPointer(register, x.clone())),
+                               Node::Register(x) => Ok(Node::Mov(register, x)),
+                               _ => self.error("unknown error occured."),
+                           }
+                       }
+                    }
                 }
-                Err(e) => self.error(&format!("invalid arguments to mov ({}).", e)),
+                None => self.error("invalid argument to mov (expected register)."),
             }
         }
     }
