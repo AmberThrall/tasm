@@ -107,6 +107,10 @@ pub enum Token {
     CMP,
     #[token("bswap")]
     BSWAP,
+    #[token("push")]
+    Push,
+    #[token("pop")]
+    Pop,
 
     // Registers
     #[token("ah")] 

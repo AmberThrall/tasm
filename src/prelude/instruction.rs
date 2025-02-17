@@ -48,6 +48,8 @@ pub enum Instruction {
     XOr(Register, Register),
     Compare(Register, Register),
     CompareImmediate(Register, Value),
+    Push(Register),
+    Pop(Register),
 }
 
 impl Instruction {
@@ -102,6 +104,8 @@ impl Instruction {
                 let data_len = register.bits() / 8;
                 if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
             },
+            Self::Push(r) => if r.bits() == 16 { 2 } else { 1 },
+            Self::Pop(r) => if r.bits() == 16 { 2 } else { 1 },
         }
     }
 }
@@ -328,6 +332,14 @@ impl Program {
                     _ => 0xF8 + register.offset(),
                 });
                 data.extend_from_slice(&value.as_vec(&self, cur_addr));
+            }
+            Instruction::Push(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(0x50 + register.offset());
+            }
+            Instruction::Pop(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(0x58 + register.offset());
             }
         }
 

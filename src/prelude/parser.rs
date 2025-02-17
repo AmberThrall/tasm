@@ -40,6 +40,8 @@ pub enum Node {
     CMPImm(Register, u32),
     CMPImmPointer(Register, String),
     BSWAP(Register),
+    Push(Register),
+    Pop(Register),
     Register(Register),
     Integer(u32),
     Pointer(String),
@@ -172,6 +174,8 @@ impl<'a> Parser<'a> {
             Some(Token::Xor) => self.xor_statement(),
             Some(Token::CMP) => self.cmp_statement(),
             Some(Token::BSWAP) => self.bswap_statement(),
+            Some(Token::Push) => self.push_statement(),
+            Some(Token::Pop) => self.pop_statement(),
             _ => self.error("expected a statement."),
         }
     }
@@ -496,6 +500,28 @@ impl<'a> Parser<'a> {
         match self.register() {
             Some(r) => Ok(Node::BSWAP(r)),
             None => self.error("invalid argument for 'bswap', expected register."),
+        }
+    }
+
+    // push_statement ::= PUSH required_whitespace register
+    fn push_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'push'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::Push(r)),
+            None => self.error("invalid argument for 'push', expected register."),
+        }
+    }
+
+    // pop_statement ::= POP required_whitespace register
+    fn pop_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'pop'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::Pop(r)),
+            None => self.error("invalid argument for 'pop', expected register."),
         }
     }
 
