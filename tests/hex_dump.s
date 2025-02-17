@@ -1,6 +1,9 @@
 INCLUDE "hex_dump_functions.s"
 ENTRY Main
 
+EQU INBUFFER  0x09000000
+EQU OUTBUFFER 0x09800000
+
 Main:
     xor edi, edi
     xor esi, esi
@@ -11,9 +14,9 @@ _loop2:
     push edi
     ; Print "offset: \n"
     
-    mov ecx, 0x09000000
+    mov ecx, OUTBUFFER
     mov dl, 0xA    ; 0xA = '\n'
-    mov [0x09000000], dl 
+    mov [OUTBUFFER], dl 
     mov edx, 1
     call Print
 
@@ -21,24 +24,21 @@ _loop2:
     mov eax, edi 
     call PrintHex
 
-    mov ecx, 0x09000000
+    mov ecx, OUTBUFFER 
     mov dl, 0x3A   ; ':'
-    mov [0x09000000], dl 
+    mov [OUTBUFFER], dl 
     mov dl, 0x20   ; 0x20 = ' '
-    mov [0x09000001], dl 
+    mov [OUTBUFFER], dl 
     mov edx, 2
     call Print
     mov esi, 16
 
-    mov ecx, 0x09000000
-    mov edx, 1
-    call Clear
     pop edi
 
 _get_byte:
     push esi
     push edi
-    mov ecx, 0x09000000
+    mov ecx, INBUFFER 
     call GetByte
     cmp eax, 0
     jz _exit
@@ -62,7 +62,8 @@ _get_byte:
 
 _exit:
     mov eax, 0xA    ; 0xA = '\n'
-    mov [0x09000000], eax
+    mov ecx, OUTBUFFER
+    mov [OUTBUFFER], eax
     call Print
 
     ; Exit
