@@ -1,7 +1,7 @@
-entry _start
+ENTRY _start
 
 _msg: 
-    db "Hello World!",0xA
+    DB "Hello World!",0xA
 
 _start:
     mov ebx, 1      ; stdout

@@ -13,9 +13,9 @@ pub enum Token {
     Colon,
 
     // Pseudo-instructions
-    #[token("entry")]
+    #[token("ENTRY")]
     Entry,
-    #[token("db")]
+    #[token("DB")]
     Db,
 
     // Instructions

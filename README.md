@@ -21,10 +21,10 @@ TASM's syntax is based on Intel syntax.
 Below is a simple example printing "Hello World!" to stdout and exiting.
 
 ```asm
-entry _start
+ENTRY _start
 
 _msg: 
-    db "Hello World!",0xA
+    DB "Hello World!",0xA
 
 _start:
     mov eax, 4      ; write

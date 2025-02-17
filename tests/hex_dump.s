@@ -1,4 +1,4 @@
-entry Main
+ENTRY Main
 
 ; Calls sys_read to read a single byte and stores the output to [ecx]
 ; Returns the number of bytes read (zero indicates EOF) to eax

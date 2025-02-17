@@ -1,4 +1,4 @@
-entry _start
+ENTRY _start
 
 ; Calls sys_read to read a single byte and stores the output to ecx
 GetByte:
