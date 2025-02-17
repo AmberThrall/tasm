@@ -46,6 +46,10 @@ pub enum Node {
     CallPointer(String),
     CallRegister(Register),
     Return,
+    Not(Register),
+    Neg(Register),
+    SHL(Register),
+    SHR(Register),
     Register(Register),
     Integer(u32),
     Pointer(String),
@@ -182,6 +186,10 @@ impl<'a> Parser<'a> {
             Some(Token::Pop) => self.pop_statement(),
             Some(Token::Call) => self.call_statement(),
             Some(Token::Ret) => { self.march(); Ok(Node::Return) },
+            Some(Token::Not) => self.not_statement(),
+            Some(Token::Neg) => self.neg_statement(),
+            Some(Token::SHL) => self.shl_statement(),
+            Some(Token::SHR) => self.shr_statement(),
             _ => self.error("expected a statement."),
         }
     }
@@ -546,6 +554,50 @@ impl<'a> Parser<'a> {
                 Some(register) => Ok(Node::CallRegister(register)),
                 _ => self.error("invalid argument to call."),
             }
+        }
+    }
+
+    // not_statement ::= NOT required_whitespace register
+    fn not_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'not'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::Not(r)),
+            None => self.error("invalid argument for 'not', expected register."),
+        }
+    }
+
+    // neg_statement ::= NEG required_whitespace register
+    fn neg_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'neg'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::Neg(r)),
+            None => self.error("invalid argument for 'neg', expected register."),
+        }
+    }
+
+    // shl_statement ::= SHL required_whitespace register
+    fn shl_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'shl'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::SHL(r)),
+            None => self.error("invalid argument for 'shl', expected register."),
+        }
+    }
+
+    // shr_statement ::= NEG required_whitespace register
+    fn shr_statement(&mut self) -> Result<Node, Error> {
+        self.march(); 
+        if !self.required_whitespace() { return self.error("expected whitespace after 'shr'."); }
+        
+        match self.register() {
+            Some(r) => Ok(Node::SHR(r)),
+            None => self.error("invalid argument for 'shr', expected register."),
         }
     }
 

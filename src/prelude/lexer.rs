@@ -115,6 +115,14 @@ pub enum Token {
     Call,
     #[token("ret")]
     Ret,
+    #[token("not")]
+    Not,
+    #[token("neg")]
+    Neg,
+    #[token("shl")]
+    SHL,
+    #[token("shr")]
+    SHR,
 
     // Registers
     #[token("ah")] 

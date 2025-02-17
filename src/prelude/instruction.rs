@@ -53,6 +53,10 @@ pub enum Instruction {
     Call(Value),
     CallRegister(Register),
     Return,
+    Not(Register),
+    Neg(Register),
+    ShiftLeft(Register),
+    ShiftRight(Register),
 }
 
 impl Instruction {
@@ -112,6 +116,10 @@ impl Instruction {
             Self::Call(_) => 5,
             Self::CallRegister(r) => if r.bits() == 16 { 2 } else { 1 },
             Self::Return => 1,
+            Self::Not(r) => if r.bits() == 16 { 3 } else { 2 },
+            Self::Neg(r) => if r.bits() == 16 { 3 } else { 2 },
+            Self::ShiftLeft(r) => if r.bits() == 16 { 3 } else { 2 },
+            Self::ShiftRight(r) => if r.bits() == 16 { 3 } else { 2 },
         }
     }
 }
@@ -357,6 +365,26 @@ impl Program {
                 data.push(0xD0 + register.offset());
             }
             Instruction::Return => data.push(0xC3),
+            Instruction::Not(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(if register.bits() == 8 { 0xF6 } else { 0xF7 });
+                data.push(0xD0 + register.offset());
+            }
+            Instruction::Neg(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(if register.bits() == 8 { 0xF6 } else { 0xF7 });
+                data.push(0xD8 + register.offset());
+            }
+            Instruction::ShiftLeft(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(if register.bits() == 8 { 0xD0 } else { 0xD1 });
+                data.push(0xE0 + register.offset());
+            }
+            Instruction::ShiftRight(register) => {
+                if register.bits() == 16 { data.push(0x66); }
+                data.push(if register.bits() == 8 { 0xD0 } else { 0xD1 });
+                data.push(0xE8 + register.offset());
+            }
         }
 
         data

@@ -94,6 +94,10 @@ impl CodeGenerator {
             Node::CallPointer(label) => self.push_instr(Instruction::Call(Value::RelPointer(label.clone()))),
             Node::CallRegister(register) => self.push_instr(Instruction::CallRegister(*register)),
             Node::Return => self.push_instr(Instruction::Return),
+            Node::Not(register) => self.push_instr(Instruction::Not(*register)),
+            Node::Neg(register) => self.push_instr(Instruction::Neg(*register)),
+            Node::SHL(register) => self.push_instr(Instruction::ShiftLeft(*register)),
+            Node::SHR(register) => self.push_instr(Instruction::ShiftRight(*register)),
             _ => (),
         }
     }
