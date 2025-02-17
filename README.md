@@ -1,6 +1,6 @@
 # TASM 
 
-**TASM** is a tiny x86 assembler targeting System V for Linux written in Rust. 
+**TASM** is a tiny x86 assembler for Linux targeting System V.
 It only contains a subset of the instructions.
 There is no linker, your entire source code must be contained in a single source file.
 
@@ -17,7 +17,7 @@ TASM takes in a single mandatory argument, the path to the source code.
 By default, it assembles your code to `a.out`.
 This can be changed by passing the output flag `-o <PATH>`.
 
-TASM's syntax is based in Intel syntax.
+TASM's syntax is based on Intel syntax.
 Below is a simple example printing "Hello World!" to stdout and exiting.
 
 ```asm
