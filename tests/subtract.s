@@ -11,7 +11,7 @@ _start:
 _loop:
     xor edx, edx
     div ebx
-    db 0x80, 0xFA, 0x09                 ; cmp dl, 9
+    cmp dl, 9
     jle _skip_a
     add dl, 0x07
 _skip_a:
@@ -19,7 +19,7 @@ _skip_a:
     dec ecx
     inc edi
     mov [ecx], dl
-    db 0x85, 0xC0                       ; cmp eax, 0
+    cmp eax, 0
     jnz _loop
 
     ; Write to stdout

@@ -42,6 +42,8 @@ pub enum Instruction {
     And(Register, Register),
     Or(Register, Register),
     XOr(Register, Register),
+    Compare(Register, Register),
+    CompareImmediate(Register, Value),
 }
 
 impl Instruction {
@@ -59,11 +61,11 @@ impl Instruction {
             Self::Jump { condition, addr } => { if *condition == JumpCondition::None { 5 } else { 6 } },
             Self::AddImmediate { register, value } => { 
                 let data_len = if register.bits() == 32 { 4 } else { 1 };
-                if *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
+                if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
             },
             Self::SubImmediate { register, value } => { 
                 let data_len = if register.bits() == 32 { 4 } else { 1 };
-                if *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
+                if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
             },
             Self::Multiply(_) => 2,
             Self::Divide(_) => 2,
@@ -71,6 +73,11 @@ impl Instruction {
             Self::And(_, _) => 2,
             Self::Or(_, _) => 2,
             Self::XOr(_, _) => 2,
+            Self::Compare(_, _) => 2,
+            Self::CompareImmediate(register,_) => { 
+                let data_len = if register.bits() == 32 { 4 } else { 1 };
+                if *register == Register::AL || *register == Register::EAX { 1 + data_len } else { 2 + data_len } 
+            },
         }
     }
 }
@@ -214,6 +221,30 @@ impl Program {
                 let op = src.offset();
                 let rm = dest.offset();
                 data.push(0b11000000 | (op << 3) | rm);
+            }
+            Instruction::Compare(dest, src) => {
+                // See table 2-2 of intel manual
+                data.push(match dest.bits() {
+                    8 => 0x38,
+                    32 => 0x39,
+                    _ => 0,
+                });
+                let op = src.offset();
+                let rm = dest.offset();
+                data.push(0b11000000 | (op << 3) | rm);
+            }
+            Instruction::CompareImmediate(register, value) => {
+                match register {
+                    Register::AL | Register::EAX => (),
+                    _ => data.push(if register.bits() == 32 { 0x81 } else { 0x80 }),
+                }
+
+                data.push(match register {
+                    Register::AL => 0x3C,
+                    Register::EAX => 0x3D,
+                    _ => 0xF8 + register.offset(),
+                });
+                data.extend_from_slice(&value.as_vec(&self, cur_addr));
             }
         }
 

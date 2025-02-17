@@ -31,6 +31,9 @@ pub enum Node {
     And(Register, Register),
     Or(Register, Register),
     XOr(Register, Register),
+    CMP(Register, Register),
+    CMPImm(Register, u32),
+    CMPImmPointer(Register, String),
     Register(Register),
     Integer(u32),
     Pointer(String),
@@ -161,6 +164,7 @@ impl<'a> Parser<'a> {
             Some(Token::And) => self.and_statement(),
             Some(Token::Or) => self.or_statement(),
             Some(Token::Xor) => self.xor_statement(),
+            Some(Token::CMP) => self.cmp_statement(),
             _ => self.error("expected a statement."),
         }
     }
@@ -408,6 +412,24 @@ impl<'a> Parser<'a> {
             Err(e) => self.error(&format!("invalid argument passed to xor ({})", e)),
         }
     }
+
+    // cmp_statement ::= CMP req_ws reg_imm_or_reg_reg 
+    fn cmp_statement(&mut self) -> Result<Node, Error> {
+        self.march();
+        if !self.required_whitespace() { return self.error("expected whitespace after 'cmp'."); }
+
+        match self.reg_imm_or_reg_reg() {
+            Ok((reg, n)) => match n {
+                Node::Register(reg2) => Ok(Node::CMP(reg, reg2)),
+                Node::Pointer(label) => Ok(Node::CMPImmPointer(reg, label)),
+                Node::Integer(x) => Ok(Node::CMPImm(reg, x)),
+                _ => self.error("invalid arguments to cmp (unknown error)."),
+            }
+            Err(e) => self.error(&format!("invalid arguments to cmp ({}).", e)),
+        }
+    }
+
+
     // whitespace ::= WHITESPACE*
     fn whitespace(&mut self) {
         while let Some(token) = self.peek() {

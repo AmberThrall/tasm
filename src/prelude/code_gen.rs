@@ -71,6 +71,13 @@ impl CodeGenerator {
             Node::And(a, b) => self.push_instr(Instruction::And(*a, *b)),
             Node::Or(a, b) => self.push_instr(Instruction::Or(*a, *b)),
             Node::XOr(a, b) => self.push_instr(Instruction::XOr(*a, *b)),
+            Node::CMP(a, b) => self.push_instr(Instruction::Compare(*a, *b)),
+            Node::CMPImm(reg, x) => match reg.bits() {
+                8 => self.push_instr(Instruction::CompareImmediate(*reg, Value::UByte(*x as u8))),
+                32 => self.push_instr(Instruction::CompareImmediate(*reg, Value::UInt(*x))),
+                _ => panic!("unreachable code"),
+            }
+            Node::CMPImmPointer(reg, label) => self.push_instr(Instruction::CompareImmediate(*reg, Value::Pointer(label.clone()))),
             _ => (),
         }
     }
